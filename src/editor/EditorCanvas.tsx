@@ -1,3 +1,5 @@
+import { useLocale } from '../locale'
+import { translate } from '../translations'
 import { useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react'
 import { normalizeRect } from './geometry'
 import { pointInView, previewView, type PreviewView } from './view'
@@ -19,6 +21,8 @@ type Props = {
 type Gesture={pointerId:number;from:Point;to:Point;item?:Annotation;handle?:Handle;points:Point[]}
 
 export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropDraft,onCropDraft,onCancelCrop,image,doc,tool,disabled=false,zoom,color,picking,onPick,assets,textureDraft,onTexture,onCommit,onScaleChange,onError}:Props) {
+  const { language } = useLocale()
+  const t = (message: string) => translate(message, language)
   const viewport=useRef<HTMLDivElement>(null), surface=useRef<HTMLDivElement>(null), canvas=useRef<HTMLCanvasElement>(null)
   const gesture=useRef<Gesture|null>(null), viewRef=useRef<PreviewView|null>(null)
   const pan=useRef<{id:number;x:number;y:number;left:number;top:number}|null>(null)
@@ -187,7 +191,7 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
   }
   return <div className={'canvas-viewport'+(panning?' panning':'')} ref={viewport} onPointerDown={panDown} onPointerMove={panMove} onPointerUp={panEnd} onPointerCancel={panEnd} onLostPointerCapture={panEnd} onScroll={()=>{cancelGesture()}}>
     <div className="canvas-frame" ref={surface}>
-      <canvas ref={canvas} tabIndex={0} aria-describedby="editor-help editor-shortcuts" aria-label={'Загруженное изображение, '+doc.crop.width+' на '+doc.crop.height+' пикселей'}
+      <canvas ref={canvas} tabIndex={0} aria-describedby="editor-help editor-shortcuts" aria-label={t("Загруженное изображение, ")+doc.crop.width+t(" на ")+doc.crop.height+t(" пикселей")}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onLostPointerCapture={cancel} />
     </div>
   </div>

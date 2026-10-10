@@ -104,3 +104,24 @@ main { position: relative; z-index: 1; }
 [data-theme="light"] .editor-dialog { color:#29243c; background:#faf7ff; }
 .view-controls input[type="number"] { width:72px; }
 .view-controls select { max-width:240px; }
+
+/* Theme changes decorate the interface without touching editor pixels. */
+:root { transition: background-color .4s ease, color .3s ease; }
+.upload-zone, .editor-dialog, .brand-mark, kbd, .hero-tags span {
+  transition: color .3s ease, background-color .4s ease, border-color .3s ease, box-shadow .4s ease;
+}
+button { transition: background-color .22s ease, border-color .22s ease, color .22s ease, scale .22s ease; }
+.language-toggle { width:auto; font-size:12px; white-space:nowrap; min-height:44px; }
+.view-controls label { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.shortcuts kbd { margin-inline:4px; }
+:root[data-theme="dark"] .upload-zone { animation:theme-dark-in .35s ease; }
+:root[data-theme="light"] .upload-zone { animation:theme-light-in .35s ease; }
+@keyframes theme-dark-in { from { opacity:.86; } to { opacity:1; } }
+@keyframes theme-light-in { from { opacity:.86; } to { opacity:1; } }
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference) {
+  button:not(:disabled):hover { scale:1.035; }
+  button:not(:disabled):active { scale:1.01; }
+}
+@media (prefers-reduced-motion:reduce) {
+  button { scale:none; }
+}

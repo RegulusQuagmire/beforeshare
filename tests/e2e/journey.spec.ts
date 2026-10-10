@@ -50,6 +50,8 @@ test('Tab focus and keyboard tool activation expose correct states, allow undo, 
   await page.goto('./')
   await expect(page.getByRole('button',{name:'Светлая тема',exact:true})).toBeVisible()
   await page.keyboard.press('Tab')
+  await expect(page.getByRole('button',{name:'English',exact:true})).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(page.getByRole('button',{name:'Светлая тема',exact:true})).toBeFocused()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button',{name:'Выбрать изображение',exact:true})).toBeFocused()

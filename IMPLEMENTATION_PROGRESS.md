@@ -1,7 +1,9 @@
 # BeforeShare 2.0 — implementation progress
 
 ## Current stage (2026-10-10)
-Implementation, review, documentation and release verification complete. Code release `5cd6974abcf86eefe098886106845f19dd8da799` was pushed normally to main; remote SHA matched. CI and Pages succeeded; public application verified. Final documentation commit records this evidence; its SHA is available in git log and the final report.
+Final update implemented: canonical owner changed to RegulusQuagmire; origin, documentation links, English GitHub description and homepage updated. Added Russian/English UI with local preference persistence and English documentation, plus theme transitions and hover scaling with reduced-motion support. Language tests confirm annotations/history survive switching. Read-only review approved. ESLint, TypeScript, all 130 unit tests and production build passed. Full Playwright: 90 passed, 2 Firefox mobile-emulation skips; final spacing/button-width adjustment additionally verified by 10 targeted tests across Chromium/Firefox/WebKit. Windows sandbox prevented Firefox content-process creation; all engines passed outside that sandbox. Updated synthetic screenshots and visually checked English desktop/mobile. Next: verify clean clone/install, ordinary push, then Actions and the new Pages URL.
+
+Previous release: `5cd6974abcf86eefe098886106845f19dd8da799` and documentation `43d24d49b6527dd42861cceca77206cd3048103d` reached main; remote SHA, successful CI/Pages and public application confirmed. After the rename, the new Pages URL returned HTTP 200 with the previous bundle. This does not yet verify publication of the final language/motion update.
 
 ## Baseline and preservation
 - Existing repository cloned into an empty workspace; baseline `8db48bc`. Work isolated on `beforeshare-2`.
@@ -33,8 +35,8 @@ Implementation, review, documentation and release verification complete. Code re
 - Git push dry run authenticated successfully; remote main still `8db48bc` before release.
 - Clean clone directly from GitHub at `5cd6974`: npm ci, ESLint, TypeScript, 127 unit tests and build passed; zero audit vulnerabilities.
 - Ordinary `git push origin main`: succeeded via fast-forward; `git ls-remote` confirmed exact code-release SHA. No force push, deletions or history rewrite.
-- CI: success, https://github.com/lolztim13-bit/beforeshare/actions/runs/38056324105 . Pages: success, https://github.com/lolztim13-bit/beforeshare/actions/runs/38056324115 . Both workflows ran all three browser projects.
-- Public https://lolztim13-bit.github.io/beforeshare/ returned HTTP 200 and expected `index-BKZokBc5.js` bundle. Four real published Chromium scenarios passed: original image→masks/annotations/crop→download/reopen journey; multiline text edit/pencil/preview; actual WebP and damaged replacement; same-byte preview download and opaque protection/no operation network.
+- CI: success, https://github.com/RegulusQuagmire/beforeshare/actions/runs/38056324105 . Pages: success, https://github.com/RegulusQuagmire/beforeshare/actions/runs/38056324115 . Both workflows ran all three browser projects.
+- Public https://RegulusQuagmire.github.io/beforeshare/ returned HTTP 200 and expected `index-BKZokBc5.js` bundle. Four real published Chromium scenarios passed: original image→masks/annotations/crop→download/reopen journey; multiline text edit/pencil/preview; actual WebP and damaged replacement; same-byte preview download and opaque protection/no operation network.
 - Remaining verification limit: physical Safari/iOS/Android devices unavailable. No outstanding implementation requirement identified; documented format/texture/font limits remain intentional.
 
 ## Performance measurements

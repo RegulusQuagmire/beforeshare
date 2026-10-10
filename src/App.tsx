@@ -1,3 +1,5 @@
+import { useLocale } from './locale'
+import { translate } from './translations'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Annotation, LoadedImage, Point, Tool } from './editor/types'
 import { appendAnnotation } from './editor/document'
@@ -26,6 +28,8 @@ const toolHelp:Record<Tool,string>={
 }
 
 export default function App() {
+  const { language, setLanguage } = useLocale()
+  const t = (message: string) => translate(message, language)
   const [theme,setTheme]=useState<'dark'|'light'>('dark')
   const [panning,setPanning]=useState(false)
   const [selectedId,setSelectedId]=useState<string|null>(null),[textDraft,setTextDraft]=useState<TextAnnotation|null>(null)
@@ -70,7 +74,7 @@ export default function App() {
   const openFiles=useCallback(async(files:File[])=>{
     if(loading.current||exportInFlight.current||files.length===0||textureLocked||textDraft||preview) return
     if(files.length!==1){setError('Выберите одно изображение');return}
-    if(current.current&&!window.confirm('Открыть другое изображение? Текущие изменения будут потеряны')) return
+    if(current.current&&!window.confirm(translate('Открыть другое изображение? Текущие изменения будут потеряны', language))) return
     loading.current=true;setBusy(true);setError('')
     try {
       const next=await loadImage(files[0])
@@ -83,7 +87,7 @@ export default function App() {
     } catch(cause) {
       if(mounted.current) setError(cause instanceof Error?cause.message:'Не удалось открыть изображение.')
     } finally {loading.current=false;if(mounted.current) setBusy(false)}
-  },[reset,resetTexture,textureLocked,textDraft,preview])
+  },[reset,resetTexture,textureLocked,textDraft,preview,language])
 
   async function savePng() {
     if(!image || !editor.document || loading.current || locked || exportInFlight.current) return
@@ -116,74 +120,73 @@ export default function App() {
 
   return <><AmbientBackdrop theme={theme}/><main>
     <UploadZone busy={busy||textureLocked||exporting||!!textDraft||preview} hasImage={!!image} onFiles={openFiles}>
-      <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>Перед отправкой</h1></div>{image&&<p className="stage">Редактирование изображения</p>}<button type="button" className="secondary theme-toggle" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Светлая тема':'Тёмная тема'}</button></header>
+      <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>{t("Перед отправкой")}</h1></div><button type="button" className="secondary language-toggle" lang={language==='ru'?'en':'ru'} onClick={()=>setLanguage(language==='ru'?'en':'ru')}>{language==='ru'?'English':'Русский'}</button>{image&&<p className="stage">{t("Редактирование изображения")}</p>}<button type="button" className="secondary theme-toggle" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?t("Светлая тема"):t("Тёмная тема")}</button></header>
       {!image&&<section className="intro">
         <div className="hero-copy">
-          <p className="eyebrow">Только ваш браузер. Только ваша картинка.</p>
-          <h2>Скрой личное.<br/><span>Поделись остальным.</span></h2>
-          <p className="hero-description">Подготовьте скриншот перед отправкой: закройте личные данные, добавьте пояснения и сохраните готовый PNG.</p>
-          <p className="paste-hint">Перетащите изображение сюда или вставьте через <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd>.</p>
-          <div className="hero-tags"><span>Без загрузки на сервер</span><span>Без регистрации</span></div>
+          <p className="eyebrow">{t("Только ваш браузер. Только ваша картинка.")}</p>
+          <h2>{t("Скрой личное.")}<br/><span>{t("Поделись остальным.")}</span></h2>
+          <p className="hero-description">{t("Подготовьте скриншот перед отправкой: закройте личные данные, добавьте пояснения и сохраните готовый PNG.")}</p>
+          <p className="paste-hint">{t("Перетащите изображение сюда или вставьте через")} <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd>.</p>
+          <div className="hero-tags"><span>{t("Без загрузки на сервер")}</span><span>{t("Без регистрации")}</span></div>
         </div>
         <div className="hero-preview" aria-hidden="true">
-          <div className="preview-caption">Лишние детали — под вашим контролем <span>Пример</span></div>
-          <div className="mock-window mock-before"><div className="mock-title"><span>● ● ●</span>До</div><div className="mock-content"><div className="mock-avatar">Д</div><strong>Демо-аккаунт</strong><small>Электронная почта</small><p>demo@example.invalid</p><small>Номер аккаунта</small><p>DEMO-1234-5678</p></div></div>
-          <div className="mock-window mock-after"><div className="mock-title"><span>● ● ●</span>Готово к отправке ↗</div><div className="mock-content"><div className="mock-avatar">Д</div><strong>Демо-аккаунт</strong><small>Электронная почта</small><div className="mock-redaction wide"/><small>Номер аккаунта</small><div className="mock-redaction"/><span className="mock-number">1</span></div></div>
-          <p className="preview-note">Непрозрачное скрытие · чистый PNG</p>
+          <div className="preview-caption">{t("Лишние детали — под вашим контролем")}<span>{t("Пример")}</span></div>
+          <div className="mock-window mock-before"><div className="mock-title"><span>● ● ●</span>{t("До")}</div><div className="mock-content"><div className="mock-avatar">{t("Д")}</div><strong>{t("Демо-аккаунт")}</strong><small>{t("Электронная почта")}</small><p>demo@example.invalid</p><small>{t("Номер аккаунта")}</small><p>DEMO-1234-5678</p></div></div>
+          <div className="mock-window mock-after"><div className="mock-title"><span>● ● ●</span>{t("Готово к отправке ↗")}</div><div className="mock-content"><div className="mock-avatar">{t("Д")}</div><strong>{t("Демо-аккаунт")}</strong><small>{t("Электронная почта")}</small><div className="mock-redaction wide"/><small>{t("Номер аккаунта")}</small><div className="mock-redaction"/><span className="mock-number">1</span></div></div>
+          <p className="preview-note">{t("Непрозрачное скрытие · чистый PNG")}</p>
         </div>
       </section>}
       {image&&<>
         <Toolbar panning={panning} onPan={()=>{setPicking(false);setPanning(value=>!value)}} tool={editor.tool} onToolChange={tool=>{setSelectedId(null);setPanning(false);setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
-        <div className="view-controls" role="group" aria-label="Масштаб и цвет">
-          <label className="zoom-control">Масштаб
-            <input type="range" aria-label="Масштаб изображения" min="25" max="400" step="1" value={zoom??Math.max(25,Math.min(400,scale))} disabled={locked} onChange={event=>changeZoom(Number(event.target.value))}/>
+        <div className="view-controls" role="group" aria-label={t("Масштаб и цвет")}>
+          <label className="zoom-control">{t("Масштаб")}<input type="range" aria-label={t("Масштаб изображения")} min="25" max="400" step="1" value={zoom??Math.max(25,Math.min(400,scale))} disabled={locked} onChange={event=>changeZoom(Number(event.target.value))}/>
           </label>
-          <button type="button" className="secondary" disabled={locked} onClick={()=>changeZoom(null)}>Вписать</button>
-          <label className="color-control">Цвет заливки <input aria-label="Цвет заливки" type="color" value={color} disabled={locked} onChange={event=>setColor(event.target.value)}/></label>
-          <button type="button" className="secondary" disabled={locked} aria-pressed={picking} onClick={()=>{setPanning(false);setPicking(!picking)}}>Пипетка</button>
-          {editor.tool==='pencil'&&<label>Толщина линии <input aria-label="Толщина линии" type="number" min={1} max={80} value={lineWidth} disabled={locked} onChange={e=>setLineWidth(Math.max(1,Math.min(80,Number(e.target.value)||1)))}/></label>}
+          <button type="button" className="secondary" disabled={locked} onClick={()=>changeZoom(null)}>{t("Вписать")}</button>
+          <label className="color-control">{t("Цвет заливки")}<input aria-label={t("Цвет заливки")} type="color" value={color} disabled={locked} onChange={event=>setColor(event.target.value)}/></label>
+          <button type="button" className="secondary" disabled={locked} aria-pressed={picking} onClick={()=>{setPanning(false);setPicking(!picking)}}>{t("Пипетка")}</button>
+          {editor.tool==='pencil'&&<label>{t("Толщина линии")}<input aria-label={t("Толщина линии")} type="number" min={1} max={80} value={lineWidth} disabled={locked} onChange={e=>setLineWidth(Math.max(1,Math.min(80,Number(e.target.value)||1)))}/></label>}
         </div>
-        {editor.tool==='select'&&!panning&&<div className="view-controls" role="group" aria-label="Выбранный объект">
-          <label>Объект <select aria-label="Объект" value={selected?.id??''} disabled={locked} onChange={e=>setSelectedId(e.target.value||null)}>
-            <option value="">Нет выделения</option>
-            {editor.document?.annotations.map((item,i)=><option key={item.id} value={item.id}>{i+1}. {item.kind==='text'?item.text.slice(0,25):item.kind==='texture'?'Текстура':toolHelp[item.kind].split('.')[0]}</option>)}
+        {editor.tool==='select'&&!panning&&<div className="view-controls" role="group" aria-label={t("Выбранный объект")}>
+          <label>{t("Объект")}<select aria-label={t("Объект")} value={selected?.id??''} disabled={locked} onChange={e=>setSelectedId(e.target.value||null)}>
+            <option value="">{t("Нет выделения")}</option>
+            {editor.document?.annotations.map((item,i)=><option key={item.id} value={item.id}>{i+1}. {item.kind==='text'?item.text.slice(0,25):item.kind==='texture'?t("Текстура"):t(toolHelp[item.kind]).split('.')[0]}</option>)}
           </select></label>
-          <label>Цвет объекта <input type="color" aria-label="Цвет объекта" value={selected&&selected.kind!=='texture'?(selected.color??(selected.kind==='redact'?'#000000':'#f97316')):'#000000'} disabled={locked||!selected||selected.kind==='texture'} onChange={e=>objectColor(e.target.value)}/></label>
-          <button type="button" className="secondary" disabled={locked||selected?.kind!=='text'} onClick={()=>{if(selected?.kind==='text')setTextDraft(selected)}}>Редактировать текст</button>
-          <button type="button" className="secondary" disabled={locked||!selected} onClick={()=>{if(selected&&editor.document)editor.commitDocument(removeAnnotation(editor.document,selected.id));setSelectedId(null)}}>Удалить объект</button>
-          <button type="button" className="secondary" disabled={locked||!selected} onClick={()=>setSelectedId(null)}>Снять выделение</button>
-          <small>После изменения заливки проверьте, не открылись ли личные данные.</small>
+          <label>{t("Цвет объекта")}<input type="color" aria-label={t("Цвет объекта")} value={selected&&selected.kind!=='texture'?(selected.color??(selected.kind==='redact'?'#000000':'#f97316')):'#000000'} disabled={locked||!selected||selected.kind==='texture'} onChange={e=>objectColor(e.target.value)}/></label>
+          <button type="button" className="secondary" disabled={locked||selected?.kind!=='text'} onClick={()=>{if(selected?.kind==='text')setTextDraft(selected)}}>{t("Редактировать текст")}</button>
+          <button type="button" className="secondary" disabled={locked||!selected} onClick={()=>{if(selected&&editor.document)editor.commitDocument(removeAnnotation(editor.document,selected.id));setSelectedId(null)}}>{t("Удалить объект")}</button>
+          <button type="button" className="secondary" disabled={locked||!selected} onClick={()=>setSelectedId(null)}>{t("Снять выделение")}</button>
+          <small>{t("После изменения заливки проверьте, не открылись ли личные данные.")}</small>
         </div>}
       </>}
-      {image&&editor.cropDraft&&<div className="crop-actions" role="group" aria-label="Подтверждение обрезки">
-        <button type="button" disabled={busy} onClick={editor.applyCrop}>Применить</button>
-        <button type="button" className="secondary" disabled={busy} onClick={editor.cancelCrop}>Отмена</button>
+      {image&&editor.cropDraft&&<div className="crop-actions" role="group" aria-label={t("Подтверждение обрезки")}>
+        <button type="button" disabled={busy} onClick={editor.applyCrop}>{t("Применить")}</button>
+        <button type="button" className="secondary" disabled={busy} onClick={editor.cancelCrop}>{t("Отмена")}</button>
       </div>}
-      {image&&(texture.computing||texture.preview)&&<div className="crop-actions" role="group" aria-label="Подтверждение текстуры">
-        {texture.preview&&<button type="button" onClick={texture.apply}>Применить</button>}
-        <button type="button" className="secondary" onClick={texture.cancel}>Отмена</button>
+      {image&&(texture.computing||texture.preview)&&<div className="crop-actions" role="group" aria-label={t("Подтверждение текстуры")}>
+        {texture.preview&&<button type="button" onClick={texture.apply}>{t("Применить")}</button>}
+        <button type="button" className="secondary" onClick={texture.cancel}>{t("Отмена")}</button>
       </div>}
-      {error&&<p className="error" role="alert">{error}</p>}
-      {texture.canFill&&<button type="button" className="secondary fallback-fill" disabled={locked} onClick={()=>texture.fill(color)}>Использовать заливку</button>}
-      <p className="status" role="status">{exporting?'Создаём PNG…':busy?'Открываем изображение…':texture.computing?'Подбираем соседнюю текстуру…':texture.preview?'Предпросмотр текстуры: примените или отмените.':picking?'Нажмите на изображение, чтобы выбрать цвет. Escape — отмена.':''}</p>
+      {error&&<p className="error" role="alert">{t(error)}</p>}
+      {texture.canFill&&<button type="button" className="secondary fallback-fill" disabled={locked} onClick={()=>texture.fill(color)}>{t("Использовать заливку")}</button>}
+      <p className="status" role="status">{exporting?t("Создаём PNG…"):busy?t("Открываем изображение…"):texture.computing?t("Подбираем соседнюю текстуру…"):texture.preview?t("Предпросмотр текстуры: примените или отмените."):picking?t("Нажмите на изображение, чтобы выбрать цвет. Escape — отмена."):''}</p>
       {image&&editor.document&&<>
-        <section className="workspace" aria-label="Предпросмотр изображения" aria-busy={busy||texture.computing||exporting}>
+        <section className="workspace" aria-label={t("Предпросмотр изображения")} aria-busy={busy||texture.computing||exporting}>
           <EditorCanvas selectedId={selectedId} onSelect={setSelectedId} onText={startText} lineWidth={lineWidth} panning={panning} cropDraft={editor.cropDraft} onCropDraft={editor.setCropDraft} onCancelCrop={editor.cancelCrop}
             tool={editor.tool} disabled={locked} onCommit={editor.commitDocument} image={image} doc={editor.document}
             onScaleChange={setScale} onError={setError} zoom={zoom} color={color} picking={picking} onPick={pick}
             assets={texture.assets} textureDraft={texture.preview} onTexture={texture.request}/>
         </section>
-        <button type="button" className="export-button" disabled={locked} onClick={savePng}>Скачать PNG</button>
-        <button type="button" className="secondary" disabled={locked} onClick={()=>{setPicking(false);setPreview(true)}}>Предпросмотр PNG</button>
-        <p className="dimensions">{editor.document.crop.width} × {editor.document.crop.height} px <span>Масштаб {scale}%</span></p>
+        <button type="button" className="export-button" disabled={locked} onClick={savePng}>{t("Скачать PNG")}</button>
+        <button type="button" className="secondary" disabled={locked} onClick={()=>{setPicking(false);setPreview(true)}}>{t("Предпросмотр PNG")}</button>
+        <p className="dimensions">{editor.document.crop.width} × {editor.document.crop.height} px <span>{t("Масштаб")} {scale}%</span></p>
       </>}
     </UploadZone>
     {textDraft&&<TextDialog key={textDraft.id} item={textDraft} onApply={applyText} onCancel={()=>setTextDraft(null)}/>}
     {preview&&image&&editor.document&&<PngPreview image={image} doc={editor.document} assets={texture.assets} onClose={()=>setPreview(false)}/>}
-    <p className="privacy">Изображение обрабатывается в вашем браузере и не отправляется на сервер</p>
+    <p className="privacy">{t("Изображение обрабатывается в вашем браузере и не отправляется на сервер")}</p>
     {image&&<>
-      <p className="note" id="editor-help">{panning?'Перемещение: двигайте картинку пальцем или перетаскивайте мышью. Для выделения выберите «Скрыть» или другой инструмент.':toolHelp[editor.tool]}</p>
-      <p className="shortcuts" id="editor-shortcuts">Отмена: <kbd>Ctrl/Cmd+Z</kbd> · Повтор: <kbd>Ctrl/Cmd+Shift+Z</kbd> или <kbd>Ctrl+Y</kbd> на Windows · <kbd>Escape</kbd> — отмена текущего жеста.</p>
+      <p className="note" id="editor-help">{panning?t("Перемещение: двигайте картинку пальцем или перетаскивайте мышью. Для выделения выберите «Скрыть» или другой инструмент."):t(toolHelp[editor.tool])}</p>
+      <p className="shortcuts" id="editor-shortcuts">{t("Отмена:")}<kbd>Ctrl/Cmd+Z</kbd>{t("· Повтор:")}<kbd>Ctrl/Cmd+Shift+Z</kbd>{t("или")}<kbd>Ctrl+Y</kbd>{t("на Windows ·")}<kbd>Escape</kbd>{t("— отмена текущего жеста.")}</p>
     </>}
   </main></>
 }

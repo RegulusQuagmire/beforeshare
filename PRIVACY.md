@@ -1,5 +1,7 @@
 # Privacy and security
 
+The RU/EN interface stores only the selected language (`beforeshare-language`) in localStorage when available. Image pixels, annotations and history are not stored there. Switching language or theme does not alter exported pixels. Theme and hover effects respect reduced motion and do not transmit data.
+
 ## BeforeShare 2.0 update (2026-10-10)
 
 Static WebP is now accepted alongside PNG/JPEG. RIFF chunk sizes, padding, VP8X canvas and VP8/VP8L frame dimensions are validated before native decode; oversized and animated files are rejected. The native decoder validates compressed payloads. Existing size/memory limits remain. Header checks are not a replacement for browser decoder security updates.

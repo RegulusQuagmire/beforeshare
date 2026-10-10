@@ -1,17 +1,21 @@
 ![BeforeShare — подготовь изображение перед отправкой](docs/images/banner.svg)
 
 <p align="center">
-  <a href="https://github.com/lolztim13-bit/beforeshare/actions/workflows/ci.yml"><img src="https://github.com/lolztim13-bit/beforeshare/actions/workflows/ci.yml/badge.svg" alt="Проверки проекта"></a>
+  <a href="https://github.com/RegulusQuagmire/beforeshare/actions/workflows/ci.yml"><img src="https://github.com/RegulusQuagmire/beforeshare/actions/workflows/ci.yml/badge.svg" alt="Проверки проекта"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-f97316" alt="Лицензия MIT"></a>
 </p>
 
 # BeforeShare — перед отправкой
 
+[English documentation](README.en.md)
+
 **Скрой личное. Поделись остальным.**
 
-Локальный редактор скриншотов: закрой личные данные, добавь пояснения, обрежь лишнее и скачай готовый PNG. Обработка изображения выполняется на твоём устройстве, в браузере. Интерфейс приложения — на русском.
+Локальный редактор скриншотов: закрой личные данные, добавь пояснения, обрежь лишнее и скачай готовый PNG. Обработка изображения выполняется на твоём устройстве, в браузере. Интерфейс доступен на русском и английском: переключатель English / Русский находится в шапке. Выбор языка сохраняется локально; смена языка не меняет изображение, подписи или историю.
 
-**[Открыть BeforeShare](https://lolztim13-bit.github.io/beforeshare/)** · [Исходный код](https://github.com/lolztim13-bit/beforeshare)
+**[Открыть BeforeShare](https://regulusquagmire.github.io/beforeshare/)** · [Исходный код](https://github.com/RegulusQuagmire/beforeshare)
+
+Аккаунт переименован в RegulusQuagmire. Используйте новый адрес Pages выше; старый адрес сайта может не перенаправлять пользователей.
 
 Базовый публичный сайт проверен 10 октября 2026 года в Chromium и Firefox: загрузка, скрытие данных, стрелки и номера, обрезка, отмена/повтор и скачивание PNG.
 
@@ -20,6 +24,8 @@
 Две спокойные темы: тёмно-фиолетовая с медленно движущимися звёздами и линиями созвездий, светлая с мягкими лавандово-персиковыми градиентами. Кнопка переключения находится вверху приложения. Уменьшение движения отключает анимации; скрытая вкладка приостанавливает фон. Фон не перехватывает касания и не попадает в PNG. Интерфейс адаптирован к узким экранам, изображение показано на нейтральной подложке.
 
 Идеи дальнейшего развития и их приоритеты: [IMPROVEMENTS.md](IMPROVEMENTS.md). Они не обозначают уже добавленные функции.
+
+Смена темы сопровождается коротким плавным переходом. На устройствах с мышью активные кнопки слегка увеличиваются при наведении. Эти эффекты отключены при системном уменьшении движения и не влияют на пиксели PNG.
 
 ## Возможности
 
@@ -62,7 +68,7 @@
 Нужны **Git** и **Node.js 24 LTS** с npm.
 
 ```sh
-git clone https://github.com/lolztim13-bit/beforeshare.git
+git clone https://github.com/RegulusQuagmire/beforeshare.git
 cd beforeshare
 npm ci
 npm run dev

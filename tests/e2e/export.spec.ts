@@ -176,5 +176,5 @@ test('production upload/edit/texture/export stays local and texture previews can
   await page.getByRole('button',{name:'Отменить',exact:true}).click()
   region(await decode(page,await download(page)),20,20,40,30,[255,0,0,255])
   expect(requests).toEqual([]);expect(sockets).toEqual([])
-  expect(await page.evaluate(()=>localStorage.length)).toBe(0)
+  expect(await page.evaluate(()=>Object.entries(localStorage))).toEqual([['beforeshare-language','ru']])
 })

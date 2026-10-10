@@ -139,7 +139,7 @@ test('cancel computation and preview with Escape; no operation HTTP requests or 
   await page.keyboard.press('Escape')
   await expect(page.getByRole('button',{name:'Отменить',exact:true})).toBeDisabled()
   expect(requests).toEqual([])
-  expect(await page.evaluate(()=>localStorage.length)).toBe(0)
+  expect(await page.evaluate(()=>Object.entries(localStorage))).toEqual([['beforeshare-language','ru']])
 })
 
 test('Worker construction failure releases the cloned bitmap and unlocks editor',async({page})=>{
