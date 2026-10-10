@@ -7,6 +7,7 @@ import { useTexture } from './editor/useTexture'
 import { exportPng, downloadBlob, pngFilename } from './editor/export'
 import { loadImage } from './upload/loadImage'
 import { UploadZone } from './upload/UploadZone'
+import { AmbientBackdrop } from './AmbientBackdrop'
 import './styles.css'
 
 const toolHelp:Record<Tool,string>={
@@ -18,6 +19,9 @@ const toolHelp:Record<Tool,string>={
 }
 
 export default function App() {
+  const [theme,setTheme]=useState<'dark'|'light'>('dark')
+  const [panning,setPanning]=useState(false)
+  useEffect(()=>{document.documentElement.dataset.theme=theme},[theme])
   const [image,setImage]=useState<LoadedImage|null>(null)
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[scale,setScale]=useState(100)
   const [zoom,setZoom]=useState<number|null>(null),[color,setColor]=useState('#000000'),[picking,setPicking]=useState(false)
@@ -50,7 +54,7 @@ export default function App() {
       if(!mounted.current){next.bitmap.close();return}
       const previous=current.current;current.current=next
       resetTexture();reset(next.width,next.height);setImage(next)
-      setZoom(null);setColor('#000000');setPicking(false)
+      setPanning(false);setZoom(null);setColor('#000000');setPicking(false)
       previous?.bitmap.close()
     } catch(cause) {
       if(mounted.current) setError(cause instanceof Error?cause.message:'Не удалось открыть изображение.')
@@ -72,11 +76,11 @@ export default function App() {
   }
 
   function changeZoom(value:number|null) {editor.cancelCrop();setPicking(false);setZoom(value)}
-  function pick(value:string){setColor(value);setPicking(false);editor.setTool('redact')}
+  function pick(value:string){setPanning(false);setColor(value);setPicking(false);editor.setTool('redact')}
 
-  return <main>
+  return <><AmbientBackdrop theme={theme}/><main>
     <UploadZone busy={busy||textureLocked||exporting} hasImage={!!image} onFiles={openFiles}>
-      <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>Перед отправкой</h1></div>{image&&<p className="stage">Редактирование изображения</p>}</header>
+      <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>Перед отправкой</h1></div>{image&&<p className="stage">Редактирование изображения</p>}<button type="button" className="secondary theme-toggle" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Светлая тема':'Тёмная тема'}</button></header>
       {!image&&<section className="intro">
         <div className="hero-copy">
           <p className="eyebrow">Только ваш браузер. Только ваша картинка.</p>
@@ -93,14 +97,14 @@ export default function App() {
         </div>
       </section>}
       {image&&<>
-        <Toolbar tool={editor.tool} onToolChange={tool=>{setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
+        <Toolbar panning={panning} onPan={()=>{setPicking(false);setPanning(value=>!value)}} tool={editor.tool} onToolChange={tool=>{setPanning(false);setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
         <div className="view-controls" role="group" aria-label="Масштаб и цвет">
           <label className="zoom-control">Масштаб
             <input type="range" aria-label="Масштаб изображения" min="25" max="400" step="1" value={zoom??Math.max(25,Math.min(400,scale))} disabled={locked} onChange={event=>changeZoom(Number(event.target.value))}/>
           </label>
           <button type="button" className="secondary" disabled={locked} onClick={()=>changeZoom(null)}>Вписать</button>
           <label className="color-control">Цвет заливки <input aria-label="Цвет заливки" type="color" value={color} disabled={locked} onChange={event=>setColor(event.target.value)}/></label>
-          <button type="button" className="secondary" disabled={locked} aria-pressed={picking} onClick={()=>setPicking(!picking)}>Пипетка</button>
+          <button type="button" className="secondary" disabled={locked} aria-pressed={picking} onClick={()=>{setPanning(false);setPicking(!picking)}}>Пипетка</button>
         </div>
       </>}
       {image&&editor.cropDraft&&<div className="crop-actions" role="group" aria-label="Подтверждение обрезки">
@@ -116,7 +120,7 @@ export default function App() {
       <p className="status" role="status">{exporting?'Создаём PNG…':busy?'Открываем изображение…':texture.computing?'Подбираем соседнюю текстуру…':texture.preview?'Предпросмотр текстуры: примените или отмените.':picking?'Нажмите на изображение, чтобы выбрать цвет. Escape — отмена.':''}</p>
       {image&&editor.document&&<>
         <section className="workspace" aria-label="Предпросмотр изображения" aria-busy={busy||texture.computing||exporting}>
-          <EditorCanvas cropDraft={editor.cropDraft} onCropDraft={editor.setCropDraft} onCancelCrop={editor.cancelCrop}
+          <EditorCanvas panning={panning} cropDraft={editor.cropDraft} onCropDraft={editor.setCropDraft} onCancelCrop={editor.cancelCrop}
             tool={editor.tool} disabled={locked} onCommit={editor.commitDocument} image={image} doc={editor.document}
             onScaleChange={setScale} onError={setError} zoom={zoom} color={color} picking={picking} onPick={pick}
             assets={texture.assets} textureDraft={texture.preview} onTexture={texture.request}/>
@@ -127,8 +131,8 @@ export default function App() {
     </UploadZone>
     <p className="privacy">Изображение обрабатывается в вашем браузере и не отправляется на сервер</p>
     {image&&<>
-      <p className="note" id="editor-help">{toolHelp[editor.tool]}</p>
+      <p className="note" id="editor-help">{panning?'Перемещение: двигайте картинку пальцем или перетаскивайте мышью. Для выделения выберите «Скрыть» или другой инструмент.':toolHelp[editor.tool]}</p>
       <p className="shortcuts" id="editor-shortcuts">Отмена: <kbd>Ctrl/Cmd+Z</kbd> · Повтор: <kbd>Ctrl/Cmd+Shift+Z</kbd> или <kbd>Ctrl+Y</kbd> на Windows · <kbd>Escape</kbd> — отмена текущего жеста.</p>
     </>}
-  </main>
+  </main></>
 }
