@@ -133,7 +133,7 @@ export default function App() {
         </div>
       </section>}
       {image&&<>
-        <Toolbar panning={panning} onPan={()=>{setPicking(false);setPanning(value=>!value)}} tool={editor.tool} onToolChange={tool=>{setPanning(false);setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
+        <Toolbar panning={panning} onPan={()=>{setPicking(false);setPanning(value=>!value)}} tool={editor.tool} onToolChange={tool=>{setSelectedId(null);setPanning(false);setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
         <div className="view-controls" role="group" aria-label="Масштаб и цвет">
           <label className="zoom-control">Масштаб
             <input type="range" aria-label="Масштаб изображения" min="25" max="400" step="1" value={zoom??Math.max(25,Math.min(400,scale))} disabled={locked} onChange={event=>changeZoom(Number(event.target.value))}/>

@@ -126,7 +126,7 @@ function detectFormat(data: ArrayBuffer): 'image/png' | 'image/jpeg' | 'image/we
     validateJpegHeader(bytes)
     return 'image/jpeg'
   }
-  throw new Error('Поддерживаются PNG или JPEG, а также WebP. Формат проверяется по содержимому файла.')
+  throw new Error('Поддерживаются только PNG, JPEG или WebP. Формат проверяется по содержимому файла.')
 }
 
 export async function loadImage(file: File): Promise<LoadedImage> {

@@ -7,3 +7,4 @@ Large file and dimension boundary tests construct values in memory instead of st
 Evening 6: `synthetic-account.png` is a locally generated 480 × 300 screenshot with demo@example.invalid and DEMO_TOKEN_NOT_REAL_123456; neither identifies a real person or credential. The journey covers both fields, adds an arrow and two markers, crops, undoes/redoes, downloads and separately decodes the PNG in Chromium and Firefox.
 
 Release documentation uses copies of synthetic-account.png and an actual flattened editor export in docs/images/before.png and after.png; editor.png is a real screenshot of that synthetic session. No personal data or real credentials.
+`ordinary.webp` is a synthetic 80×60 orange rectangle with a transparent corner, encoded locally in Chromium. It contains no user content and exercises actual extended WebP decoding across browsers.

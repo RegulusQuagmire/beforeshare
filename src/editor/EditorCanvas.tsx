@@ -115,6 +115,7 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
   function down(event:PointerEvent<HTMLCanvasElement>) {
     if(panning || disabled || gesture.current || !event.isPrimary || event.button!==0) return
     event.preventDefault()
+    event.currentTarget.focus({preventScroll:true})
     const from=point(event)
     if(tool==='text'&&!picking){onText(from);return}
     let item:Annotation|undefined,handle:Handle='move'
@@ -146,11 +147,12 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
     if(tool==='select'&&!picking){if(active.item)onCommit(updateAnnotation(doc,transformAnnotation(active.item,active.handle??'move',active.from,to,doc.crop)));return}
     if(tool==='pencil'&&!picking){onCommit(appendAnnotation(doc,{id:crypto.randomUUID(),kind:'pencil',points:strokePoints([...active.points,to],Math.max(0.5,lineWidth/4)),width:lineWidth,color}));return}
     if(picking) {
-      const sample=new OffscreenCanvas(1,1),ctx=sample.getContext('2d')!
-      renderScene(ctx as unknown as CanvasRenderingContext2D,image,doc,1,assets,{x:Math.min(image.width-1,Math.floor(active.from.x)),y:Math.min(image.height-1,Math.floor(active.from.y))})
+      const sample=document.createElement('canvas');sample.width=1;sample.height=1
+      const ctx=sample.getContext('2d')!
+      renderScene(ctx,image,doc,1,assets,{x:Math.min(image.width-1,Math.floor(active.from.x)),y:Math.min(image.height-1,Math.floor(active.from.y))})
       const rgba=ctx.getImageData(0,0,1,1).data
       const rgb=[0,1,2].map(i=>Math.round(rgba[i]*rgba[3]/255+255*(1-rgba[3]/255)).toString(16).padStart(2,'0'))
-      onPick('#'+rgb.join(''));return
+      sample.width=0;sample.height=0;onPick('#'+rgb.join(''));return
     }
     if(tool==='crop') {
       const next=cropDocument(doc,active.from,to)
@@ -185,7 +187,7 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
   }
   return <div className={'canvas-viewport'+(panning?' panning':'')} ref={viewport} onPointerDown={panDown} onPointerMove={panMove} onPointerUp={panEnd} onPointerCancel={panEnd} onLostPointerCapture={panEnd} onScroll={()=>{cancelGesture()}}>
     <div className="canvas-frame" ref={surface}>
-      <canvas ref={canvas} aria-describedby="editor-help editor-shortcuts" aria-label={'Загруженное изображение, '+doc.crop.width+' на '+doc.crop.height+' пикселей'}
+      <canvas ref={canvas} tabIndex={0} aria-describedby="editor-help editor-shortcuts" aria-label={'Загруженное изображение, '+doc.crop.width+' на '+doc.crop.height+' пикселей'}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onLostPointerCapture={cancel} />
     </div>
   </div>

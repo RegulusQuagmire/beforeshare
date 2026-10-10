@@ -34,3 +34,11 @@ it('records text, pencil, object edits and deletion in undo/redo',()=>{
 it('samples nearby stroke points but retains the final endpoint',()=>{
   expect(strokePoints([{x:0,y:0},{x:0.1,y:0.1},{x:5,y:0},{x:5.1,y:0}],1)).toEqual([{x:0,y:0},{x:5,y:0},{x:5.1,y:0}])
 })
+it('selecting a clipped annotation does not move it or add history',()=>{
+  const cropped={...createDocument(200,200),crop:{x:100,y:0,width:100,height:200}}
+  const clipped:Annotation={id:'c',kind:'redact',rect:{x:20,y:20,width:120,height:30}}
+  const next=transformAnnotation(clipped,'move',{x:120,y:30},{x:120,y:30},cropped.crop)
+  expect(next).toEqual(clipped)
+  const h=createHistory(appendAnnotation(cropped,clipped))
+  expect(commit(h,updateAnnotation(h.present,next))).toBe(h)
+})

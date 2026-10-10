@@ -16,6 +16,7 @@ it.each([
 it.each([
   webp('VP8L',[0x2f,0xff,0xff,0xff,0x0f]),
   webp('VP8 ',[0,0,0,0x9d,1,0x2a,0xff,0x3f,0xff,0x3f]),
+  webp('VP8X',[0,0,0,0,0xff,0xff,0,0xff,0xff,0]),
 ])('rejects oversized compressed dimensions before decoding',async bytes=>{
   const decode=vi.fn();vi.stubGlobal('createImageBitmap',decode)
   await expect(loadImage(new File([bytes],'oversized.webp'))).rejects.toThrow(/6000|20 Мп/)

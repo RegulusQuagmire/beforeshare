@@ -43,8 +43,9 @@ export function hitTest(doc:EditorDocument,p:Point,tolerance:number):Annotation|
 export function transformAnnotation(item:Annotation,handle:Handle,from:Point,to:Point,crop:Rect):Annotation {
   const clamp=(p:Point)=>({x:Math.max(crop.x,Math.min(crop.x+crop.width,p.x)),y:Math.max(crop.y,Math.min(crop.y+crop.height,p.y))})
   const bounds=annotationBounds(item)
-  const dx=Math.max(crop.x-bounds.x,Math.min(crop.x+crop.width-bounds.x-bounds.width,to.x-from.x))
-  const dy=Math.max(crop.y-bounds.y,Math.min(crop.y+crop.height-bounds.y-bounds.height,to.y-from.y))
+  // Cropping may already clip a shape. Do not snap it on selection (delta=0).
+  const dx=Math.max(Math.min(0,crop.x-bounds.x),Math.min(Math.max(0,crop.x+crop.width-bounds.x-bounds.width),to.x-from.x))
+  const dy=Math.max(Math.min(0,crop.y-bounds.y),Math.min(Math.max(0,crop.y+crop.height-bounds.y-bounds.height),to.y-from.y))
   const move=(p:Point)=>({x:p.x+dx,y:p.y+dy})
   if(item.kind==='arrow')return {...item,from:handle==='start'?clamp(to):handle==='move'?move(item.from):item.from,to:handle==='end'?clamp(to):handle==='move'?move(item.to):item.to}
   if(item.kind==='redact'||item.kind==='texture') {

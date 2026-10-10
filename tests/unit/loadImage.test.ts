@@ -17,7 +17,7 @@ describe('dimensions (inclusive limits, without huge fixtures)', () => {
 })
 
 describe('file validation and resource ownership (decoder mocked, not decoding proof)', () => {
-  it.each(['ordinary.png', 'transparent.png', 'ordinary.jpg', 'orientation-6.jpg'])('accepts the signature of %s, regardless of MIME or extension', async name => {
+  it.each(['ordinary.png', 'transparent.png', 'ordinary.jpg', 'orientation-6.jpg', 'ordinary.webp'])('accepts the signature of %s, regardless of MIME or extension', async name => {
     const decoded = bitmap()
     const decode = vi.fn().mockResolvedValue(decoded)
     vi.stubGlobal('createImageBitmap', decode)
@@ -49,7 +49,7 @@ describe('file validation and resource ownership (decoder mocked, not decoding p
     expect(decode).not.toHaveBeenCalled()
   })
   it.each([[], [71, 73, 70, 56, 57, 97], [60, 115, 118, 103, 62]].map(bytes => ({ bytes })))('rejects foreign/empty bytes even with PNG MIME ($bytes)', async ({ bytes }) => {
-    await expect(loadImage(new File([new Uint8Array(bytes)], 'fake.png', { type: 'image/png' }))).rejects.toThrow('PNG или JPEG')
+    await expect(loadImage(new File([new Uint8Array(bytes)], 'fake.png', { type: 'image/png' }))).rejects.toThrow('PNG, JPEG или WebP')
   })
   it('reports read failure', async () => {
     const file = fixture('ordinary.png')

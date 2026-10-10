@@ -28,3 +28,12 @@ Performance changes verified: same burst now 1 draw, 0 backing assignments, 7.6 
 
 ## Release evidence
 Pending. No publication claimed.
+
+## Review and compatibility
+- Independent read-only review found two P2 bugs: keyboard focus remained on toolbar; zero-delta selection snapped cropped objects. Both reproduced with failing tests, fixed, and reviewer confirmed fixes; no further material issue found.
+- New tools/PNG/WebP/mobile theme scenarios passed Chromium and WebKit (16 tests). Fresh isolated browser downloads fixed missing `mozglue`/Chrome side-by-side cache errors without touching shared cache. Native Chromium 125%/200% zoom now passes. Firefox desktop new-tool workflows pass; fixed test-only assumptions about pointerId and DPR before the final rerun.
+- ESLint, typecheck, 125 unit tests, production build and production dependency audit passed; audit 0 vulnerabilities.
+- Real touch pencil/selection, mixed text/pencil/crop/texture history and preview URL lifecycle checks added. Next: final browser run, clean clone/install, documentation/screenshots, commit and ordinary push, inspect Actions/Pages.
+- Real Chromium touch pencil/selection passed without page scrolling and with exactly two actions. Mixed history and pending-preview/URL cleanup: 6 passed across Chromium/Firefox/WebKit.
+- WebKit worker lacks OffscreenCanvas: added a bounded temporary HTMLCanvas crop transfer fallback, preserving worker matching/mask sanitization, generation checks and release. Eyedropper uses 1×1 HTMLCanvas. Independent reviewer confirmed privacy/resource correctness; fallback can briefly block the main thread while reading a large crop.
+- Added actual synthetic WebP fixture (including alpha) so cross-browser load tests do not accidentally test a PNG fallback from unsupported WebP encoders. Both CI/Pages now install and run all three browser projects. Physical Safari/iOS and Android devices remain outside available testing.

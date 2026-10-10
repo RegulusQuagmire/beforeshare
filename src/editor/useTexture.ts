@@ -52,9 +52,25 @@ export function useTexture({image,doc,history,commit,onError,onLock}:Options) {
         job.terminate();worker.current=null;setComputing(false);onLock(false);onError(message);setFallback({rect,doc})
       }
       job.onerror=(event)=>{event.preventDefault();fail('Не удалось восстановить текстуру. Используйте заливку.')}
-      job.onmessage=async(event:MessageEvent<{error?:string;pixels:Uint8ClampedArray;width:number;height:number}>)=>{
+      job.onmessage=async(event:MessageEvent<{error?:string;needsPixels?:boolean;pixels:Uint8ClampedArray;width:number;height:number}>)=>{
         if(generation.current!==id) return
         if(event.data.error){fail(event.data.error);return}
+        if(event.data.needsPixels) {
+          // Some WebKit ports lack OffscreenCanvas in workers. Transfer a crop
+          // raster instead; matching and mask sanitization stay in the worker.
+          const canvas=document.createElement('canvas')
+          try {
+            canvas.width=doc.crop.width;canvas.height=doc.crop.height
+            const ctx=canvas.getContext('2d',{willReadFrequently:true})
+            if(!ctx)throw new Error('Canvas недоступен')
+            ctx.drawImage(image.bitmap,-doc.crop.x,-doc.crop.y)
+            const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data
+            const excluded=doc.annotations.flatMap(item=>item.kind==='redact'||item.kind==='texture'?[item.rect]:[])
+            job.postMessage({pixels,crop:doc.crop,target:rect,excluded},[pixels.buffer])
+          } catch {fail('Не удалось прочитать текстуру. Используйте заливку.')}
+          finally {canvas.width=0;canvas.height=0}
+          return
+        }
         try {
           const pixels=new Uint8ClampedArray(event.data.pixels)
           const patch=await createImageBitmap(new ImageData(pixels,event.data.width,event.data.height))

@@ -1,6 +1,16 @@
 # Privacy and security
 
-BeforeShare edits one local PNG/JPEG in browser memory. The application has no API key, server upload endpoint, analytics, external fonts/scripts, fetch/WebSocket/beacon code, image logging or persistent image storage. The initial page, JS, CSS and favicon are fetched from the host. Production image operations are tested without operation-generated HTTP/WebSocket requests.
+## BeforeShare 2.0 update (2026-10-10)
+
+Static WebP is now accepted alongside PNG/JPEG. RIFF chunk sizes, padding, VP8X canvas and VP8/VP8L frame dimensions are validated before native decode; oversized and animated files are rejected. The native decoder validates compressed payloads. Existing size/memory limits remain. Header checks are not a replacement for browser decoder security updates.
+
+Final preview uses `exportPng`, exactly as export does. Download inside the modal uses the displayed PNG Blob without rendering again. Editor selection handles, history, themes and background animations are excluded. Protective layers stay above text, pencil, arrows and numbers. Moving/resizing/deleting protection can expose original pixels; the UI reminds users to inspect the result. No automatic detection of all private content is promised.
+
+Text is rasterized locally with system fonts; no external font requests. Strokes and text stay in document memory. History holds up to 50 actions using owned frozen annotation objects; external inputs are cloned. Texture assets are collected only once no retained document/preview references them. Preview object URLs are revoked on close, asynchronous results after close are discarded, and image replacement/history edits are locked while preview is open. Graphical resources are closed on replacement, cancellation or unmount as applicable.
+
+Review and browser tests cover output opacity, omitted source metadata, exact preview/download bytes, no operational HTTP requests, damaged replacement preservation, pointer cancellation, mixed history, themes, 400% and emulated touch. These checks do not guarantee absolute privacy, physical memory erasure, native decoder safety or correct user selection.
+
+BeforeShare edits one local PNG/JPEG/WebP in browser memory. The application has no API key, server upload endpoint, analytics, external fonts/scripts, fetch/WebSocket/beacon code, image logging or persistent image storage. The initial page, JS, CSS and favicon are fetched from the host. Production image operations are tested without operation-generated HTTP/WebSocket requests.
 
 ## What the exported PNG contains
 
