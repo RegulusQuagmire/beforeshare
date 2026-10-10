@@ -1,0 +1,69 @@
+:root { font-family: system-ui, sans-serif; color: #0f172a; background: #f8fafc; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+main { max-width: 1200px; margin: 0 auto; padding: 32px; }
+.upload-zone { position: relative; background: white; border: 1px solid #cbd5e1; border-radius: 12px; padding: 32px; }
+header { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+h1 { font-size: 24px; margin: 0; }
+h2 { font-size: clamp(24px, 4vw, 40px); line-height: 1.25; margin: 0 0 24px; max-width: 640px; }
+p { line-height: 1.5; }
+.intro { margin-top: 64px; }
+.intro p, .privacy, .note, .limits, .stage { color: #475569; }
+.file-controls { margin-top: 24px; }
+button { padding: 16px 24px; border: 1px solid #c2410c; border-radius: 8px; background: #f97316; color: #0f172a; font: 600 16px system-ui; cursor: pointer; }
+button:hover { background: #fb923c; }
+button:focus-visible { outline: 3px solid #0f172a; outline-offset: 4px; }
+button:disabled { opacity: .5; cursor: wait; }
+.loaded { display: flex; flex-direction: column; }
+.loaded header { padding-right: 200px; min-height: 56px; }
+.loaded .file-controls { position: absolute; top: 24px; right: 32px; margin: 0; }
+.stage { font-size: 14px; margin: 0; }
+.status { min-height: 24px; margin: 16px 0 8px; }
+.error { padding: 16px; margin: 16px 0 0; border: 1px solid #fca5a5; border-radius: 8px; background: #fef2f2; color: #991b1b; overflow-wrap: anywhere; }
+.workspace { display: flex; align-items: center; justify-content: center; min-height: 240px; padding: 16px; border: 1px solid #cbd5e1; border-radius: 8px; background-color: white; background-image: conic-gradient(#e2e8f0 25%, transparent 0 50%, #e2e8f0 0 75%, transparent 0); background-size: 16px 16px; }
+canvas { display: block; max-width: 100%; max-height: 60vh; width: auto; height: auto; }
+.dimensions { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; margin-bottom: 0; }
+.privacy { font-size: 14px; margin: 24px 0 0; }
+.note { font-size: 14px; margin: 8px 0; }
+.limits { font-size: 14px; }
+@media (max-width: 600px) {
+  main { padding: 16px; }
+  .upload-zone { padding: 16px; }
+  .intro { margin-top: 40px; }
+  .loaded header { padding-right: 0; }
+  .loaded .file-controls { position: static; order: -1; margin-bottom: 24px; }
+  .workspace { padding: 8px; min-height: 160px; }
+  button { width: 100%; }
+}
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+button.secondary { background: white; border-color: #cbd5e1; padding: 8px 16px; }
+button.secondary:hover { background: #f1f5f9; }
+button.secondary:disabled { cursor: default; }
+.canvas-viewport { width: 100%; height: min(60vh, 720px); min-height: 160px; display: flex; align-items: center; justify-content: center; }
+.canvas-frame { outline: 1px solid #cbd5e1; line-height: 0; }
+.canvas-frame canvas { max-width: none; max-height: none; }
+@media (max-width: 600px) { .toolbar button { width: auto; flex: 1; } }
+
+.canvas-frame canvas { touch-action: none; cursor: crosshair; }
+button.secondary[aria-pressed="true"] { background: #f97316; border-color: #c2410c; }
+
+.crop-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.crop-actions button { padding: 8px 16px; }
+
+.canvas-viewport { display: block; position: relative; overflow: auto; overscroll-behavior: contain; }
+.canvas-frame { position: relative; outline: none; line-height: 0; }
+.canvas-frame canvas { position: absolute; outline: 1px solid #cbd5e1; }
+.workspace { min-width: 0; }
+.view-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 16px; }
+.zoom-control, .color-control { display: flex; align-items: center; gap: 8px; }
+.zoom-control { flex: 1; min-width: 200px; }
+.zoom-control input { flex: 1; min-width: 80px; accent-color: #f97316; }
+.color-control input { width: 48px; height: 40px; padding: 0; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; }
+input:focus-visible { outline: 3px solid #0f172a; outline-offset: 4px; }
+.view-controls button { width: auto; }
+.fallback-fill { margin-top: 16px; align-self: flex-start; }
+
+.export-button { align-self: flex-end; margin-top: 16px; }
+
+.shortcuts { color: #475569; font-size: 14px; line-height: 1.7; margin: 8px 0; overflow-wrap: anywhere; }
+.shortcuts kbd { font: inherit; font-weight: 600; }
