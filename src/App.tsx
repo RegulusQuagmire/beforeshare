@@ -76,10 +76,21 @@ export default function App() {
 
   return <main>
     <UploadZone busy={busy||textureLocked||exporting} hasImage={!!image} onFiles={openFiles}>
-      <header><h1>Перед отправкой</h1>{image&&<p className="stage">Редактирование изображения</p>}</header>
+      <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>Перед отправкой</h1></div>{image&&<p className="stage">Редактирование изображения</p>}</header>
       {!image&&<section className="intro">
-        <h2>Вставь скриншот. Скрой лишнее. Отправь.</h2>
-        <p>Перетащите изображение сюда или вставьте через Ctrl+V / Cmd+V.</p>
+        <div className="hero-copy">
+          <p className="eyebrow">Только ваш браузер. Только ваша картинка.</p>
+          <h2>Скрой личное.<br/><span>Поделись остальным.</span></h2>
+          <p className="hero-description">Подготовьте скриншот перед отправкой: закройте личные данные, добавьте пояснения и сохраните готовый PNG.</p>
+          <p className="paste-hint">Перетащите изображение сюда или вставьте через <kbd>Ctrl+V</kbd> / <kbd>Cmd+V</kbd>.</p>
+          <div className="hero-tags"><span>Без загрузки на сервер</span><span>Без регистрации</span></div>
+        </div>
+        <div className="hero-preview" aria-hidden="true">
+          <div className="preview-caption">Лишние детали — под вашим контролем <span>Пример</span></div>
+          <div className="mock-window mock-before"><div className="mock-title"><span>● ● ●</span>До</div><div className="mock-content"><div className="mock-avatar">Д</div><strong>Демо-аккаунт</strong><small>Электронная почта</small><p>demo@example.invalid</p><small>Номер аккаунта</small><p>DEMO-1234-5678</p></div></div>
+          <div className="mock-window mock-after"><div className="mock-title"><span>● ● ●</span>Готово к отправке ↗</div><div className="mock-content"><div className="mock-avatar">Д</div><strong>Демо-аккаунт</strong><small>Электронная почта</small><div className="mock-redaction wide"/><small>Номер аккаунта</small><div className="mock-redaction"/><span className="mock-number">1</span></div></div>
+          <p className="preview-note">Непрозрачное скрытие · чистый PNG</p>
+        </div>
       </section>}
       {image&&<>
         <Toolbar tool={editor.tool} onToolChange={tool=>{setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
