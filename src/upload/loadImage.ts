@@ -41,8 +41,52 @@ function validateJpegHeader(bytes: Uint8Array): void {
   throw damaged()
 }
 
-function detectFormat(data: ArrayBuffer): 'image/png' | 'image/jpeg' {
+// RIFF bounds and both extended canvas and compressed frame sizes are checked.
+// Native decoding remains responsible for validating the compressed bitstream.
+function validateWebp(data:ArrayBuffer):void {
+  const bytes=new Uint8Array(data),view=new DataView(data)
+  if(bytes.length<20||view.getUint32(4,true)+8!==bytes.length)throw damaged()
+  const fourCC=(offset:number)=>String.fromCharCode(...bytes.subarray(offset,offset+4))
+  const uint24=(offset:number)=>bytes[offset]+bytes[offset+1]*256+bytes[offset+2]*65536
+  let offset=12,frame=false,extended=false,canvasWidth=0,canvasHeight=0
+  while(offset+8<=bytes.length) {
+    const kind=fourCC(offset),length=view.getUint32(offset+4,true),start=offset+8
+    if(length>bytes.length-start||start+length+(length%2)>bytes.length)throw damaged()
+    if(length%2&&bytes[start+length]!==0)throw damaged()
+    if(kind==='ANIM'||kind==='ANMF')throw new Error('Анимация WebP не поддерживается. Выберите статичный WebP, PNG или JPEG.')
+    if(kind==='VP8X') {
+      if(length!==10||offset!==12||extended)throw damaged()
+      if(bytes[start]&2)throw new Error('Анимация WebP не поддерживается. Выберите статичный WebP, PNG или JPEG.')
+      if((bytes[start]&0xc1)||bytes[start+1]||bytes[start+2]||bytes[start+3])throw damaged()
+      canvasWidth=uint24(start+4)+1;canvasHeight=uint24(start+7)+1
+      validateDimensions(canvasWidth,canvasHeight);extended=true
+    }
+    if(kind==='VP8 '||kind==='VP8L') {
+      if(frame)throw damaged()
+      let width:number,height:number
+      if(kind==='VP8L') {
+        if(length<5||bytes[start]!==0x2f)throw damaged()
+        const bits=view.getUint32(start+1,true)
+        if(bits>>>29)throw damaged()
+        width=(bits&0x3fff)+1;height=((bits>>>14)&0x3fff)+1
+      } else {
+        if(length<10||(bytes[start]&1)||fourCC(start+3).slice(0,3)!=='\u009d\u0001\u002a')throw damaged()
+        width=view.getUint16(start+6,true)&0x3fff;height=view.getUint16(start+8,true)&0x3fff
+      }
+      validateDimensions(width,height)
+      if(extended&&(width!==canvasWidth||height!==canvasHeight))throw damaged()
+      frame=true
+    }
+    offset=start+length+(length%2)
+  }
+  if(offset!==bytes.length||!frame)throw damaged()
+}
+
+function detectFormat(data: ArrayBuffer): 'image/png' | 'image/jpeg' | 'image/webp' {
   const bytes = new Uint8Array(data)
+  if(String.fromCharCode(...bytes.subarray(0,4))==='RIFF'&&String.fromCharCode(...bytes.subarray(8,12))==='WEBP') {
+    validateWebp(data);return 'image/webp'
+  }
   if ([137, 80, 78, 71, 13, 10, 26, 10].every((byte, i) => bytes[i] === byte)) {
     const view = new DataView(data)
     let offset = 8
@@ -82,7 +126,7 @@ function detectFormat(data: ArrayBuffer): 'image/png' | 'image/jpeg' {
     validateJpegHeader(bytes)
     return 'image/jpeg'
   }
-  throw new Error('Поддерживаются только PNG или JPEG. Формат проверяется по содержимому файла.')
+  throw new Error('Поддерживаются PNG или JPEG, а также WebP. Формат проверяется по содержимому файла.')
 }
 
 export async function loadImage(file: File): Promise<LoadedImage> {

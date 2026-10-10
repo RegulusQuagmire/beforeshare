@@ -20,5 +20,9 @@ Object geometry/model, selection handles, movement/resizing/endpoints, property 
 
 Next: WebP validation, performance measurements/optimization and expanded cross-browser/mobile/privacy tests. User explicitly requested autonomous implementation without repeated design approvals.
 
+WebP: RIFF chunk bounds/padding, VP8X/VP8/VP8L dimensions (before native decoding), static-only policy, native decoder errors, input accept list implemented. 123 unit tests passed including 10 WebP cases. Container reference: https://developers.google.com/speed/webp/docs/riff_container .
+
+Performance baseline measured in new regression tests: synchronous burst of 240 pointer moves caused 241 draws and 482 backing-size assignments, 23.3 ms; idle background caused 0 editor draws. Fifty history commits with one 10,000-point stroke: 369.7 ms, 51 duplicate stroke objects. Next: rAF batching/conditional sizing and owned immutable snapshot sharing; these performance regression tests currently fail by design.
+
 ## Release evidence
 Pending. No publication claimed.

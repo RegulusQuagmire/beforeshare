@@ -23,13 +23,13 @@ export function UploadZone({ busy, hasImage, onFiles, children }: Props) {
     onDrop={event => { event.preventDefault(); if (!busy) onFiles(Array.from(event.dataTransfer.files)) }}>
     {children}
     <div className="file-controls">
-      <input ref={input} type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" disabled={busy} hidden
+      <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" disabled={busy} hidden
         aria-label="Файл изображения"
         onChange={event => { onFiles(Array.from(event.target.files ?? [])); event.target.value = '' }} />
       <button type="button" disabled={busy} onClick={() => input.current?.click()}>
         {hasImage ? 'Открыть другое' : 'Выбрать изображение'}
       </button>
-      {!hasImage && <p className="limits">PNG или JPEG · до 20 MiB · до 20 Мп · до 6000 px по стороне</p>}
+      {!hasImage && <p className="limits">PNG, JPEG или WebP · до 20 MiB · до 20 Мп · до 6000 px по стороне</p>}
     </div>
   </div>
 }
