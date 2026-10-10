@@ -53,6 +53,8 @@
 
 ![Интерфейс BeforeShare](docs/images/editor.png)
 
+![Предпросмотр итогового PNG в светлой теме](docs/images/preview.png)
+
 </details>
 
 ## Установка и запуск

@@ -1,39 +1,45 @@
-# BeforeShare 2.0 — progress
+# BeforeShare 2.0 — implementation progress
 
-## Baseline (2026-10-10)
-- Existing repository cloned into an empty workspace; baseline `8db48bc`, branch `beforeshare-2`.
-- Main already includes mobile pan, dark/light themes, stars/constellations, gradients and reduced motion. No parallel uncommitted files in this checkout. Preserve these implementations.
-- React + TypeScript + Vite, no runtime dependencies beyond React. Documents contain source-space annotations and crop; viewport rendering and PNG share renderScene. History retains 50 actions; texture bitmaps owned separately and collected across history.
-- Missing: select/edit, text, pencil, final PNG preview, WebP. Canvas currently resets dimensions and draws synchronously on every pointer move. appendAnnotation clones the entire document before history clones it again.
-- Existing Vitest, Chromium e2e, Firefox journey, CI and Pages workflows. `npm ci`: passed, zero audit vulnerabilities.
+## Current stage (2026-10-10)
+Implementation, review, documentation and local release checks complete. Next: ordinary push to main, verify remote SHA, wait for CI/Pages and test the public URL. Publication is not yet claimed.
 
-## Implementation plan
-1. Extend immutable annotations and geometry; selection handles and one commit per gesture, object properties/deletion, keyboard support.
-2. Text form with explicit apply/cancel, multiline system fonts; sampled pencil strokes; shared rendering.
-3. Exact PNG preview using exportPng; URL ownership and edit lock.
-4. Validate WebP RIFF/VP8/VP8L/VP8X dimensions and reject animation before decoding.
-5. Measure canvas/history baseline and improved behavior; coalesce frames, avoid backing resets; preserve history ownership and texture GC.
-6. Regression/unit/e2e, privacy and limits docs, clean install, commit/push and verify remote/Actions/Pages where available.
+## Baseline and preservation
+- Existing repository cloned into an empty workspace; baseline `8db48bc`. Work isolated on `beforeshare-2`.
+- No uncommitted parallel work in this checkout. Existing mobile pan, touch handling, dark/light palettes, stars/constellations, gradients and reduced-motion behavior preserved. AmbientBackdrop unchanged.
+- Existing React/TypeScript/Vite application extended without new runtime dependencies, server processing, accounts or external fonts.
 
-## Current stage
-Object geometry/model, selection handles, movement/resizing/endpoints, property color/deletion, keyboard nudging, overlap list, multiline text dialog, sampled smooth pencil and exact PNG preview implemented. Existing pan/theme/backdrop code preserved. 113 unit tests passed; new Chromium object/text/pencil/preview workflows: 2 passed. Typecheck and ESLint passed. Selection properties retain stable layout during gestures.
+## Completed work
+1. Architecture/Git/CI analysis and incremental commits.
+2. Selection, topmost hit testing, overlap list, movement, fill resizing, independent arrow endpoints, marker movement, color/deletion/deselection. Keyboard focus, arrow nudging, Shift step and Delete/Escape. Source coordinates support scrolling and 400% zoom. One finished gesture = one history action. Protection warnings are shown.
+3. Multiline Russian/English text: local system fonts, color, size, position, editing/apply/cancel/delete and history. Modal keyboard input does not trigger editor Undo.
+4. Smooth sampled pencil: mouse/touch, color/width, move/delete a stroke, one stroke per action; cancellation/lost capture discard drafts.
+5. All nine tools in the existing toolbar; both themes and mobile viewport retained.
+6. Exact PNG preview through exportPng; resolution, edit return, same-Blob download, privacy reminder, URL cleanup and stale-result protection.
+7. Static WebP signature/RIFF/VP8/VP8L/VP8X preflight, dimensions before decode, native validation afterwards, animation/damage errors. PNG/JPEG behavior and limits preserved. Actual synthetic alpha-WebP fixture.
+8. rAF draw coalescing, conditional backing size changes. No coupling to ambient animation.
+9. Fifty-action history; owned frozen annotations shared across snapshots, external mutable input cloned. Existing texture collector retains undo/redo assets and releases unused resources.
+10. Geometry separated into objects.ts, text/PNG dialogs into focused components; strict types, no new any.
+11. Chromium, Firefox, WebKit desktop/new-tool scenarios; emulated mobile Chromium/WebKit, real CDP finger drawing/selection/pan, browser zoom 125%/200%, image zoom 400%, focus/reduced motion/themes.
+12. Expanded Vitest/Playwright coverage including mixed text/pencil/object/crop/texture history, exact PNG bytes, opaque masks over explanatory layers, damaged replacement preservation and async cleanup.
+13. Local privacy audit; PRIVACY.md updated. Independent read-only review reproduced two P2 issues (keyboard focus and zero-delta cropped-object snap), both fixed with RED→GREEN tests. Follow-up review found no material issue.
+14. README/limits/screenshots and CI/Pages updated. Both workflows run Chromium, Firefox and WebKit.
 
-Next: WebP validation, performance measurements/optimization and expanded cross-browser/mobile/privacy tests. User explicitly requested autonomous implementation without repeated design approvals.
+## Verification evidence
+- npm ci: passed; npm audit: zero vulnerabilities.
+- ESLint, TypeScript, 127 unit tests, production build: passed.
+- Full Playwright: 83 passed, 2 skipped (only unsupported Firefox mobile emulation); no failures. Chromium 57, Firefox desktop 12, WebKit 14 passed.
+- Clean local clone of `6b67a9b`: npm ci, ESLint, TypeScript, 127 unit tests and build passed. Subsequent changes only documentation/screenshots and waiting for UI readiness in an existing keyboard test.
+- Screenshots generated from synthetic-account fixture and visually inspected.
+- Git push dry run authenticated successfully; remote main still `8db48bc` before release.
 
-WebP: RIFF chunk bounds/padding, VP8X/VP8/VP8L dimensions (before native decoding), static-only policy, native decoder errors, input accept list implemented. 123 unit tests passed including 10 WebP cases. Container reference: https://developers.google.com/speed/webp/docs/riff_container .
+## Performance measurements
+Same local synthetic cases, not universal FPS claims:
+- 240 pointer movements: baseline 241 draws / 482 backing-size assignments / 23.3 ms; optimized 1 draw / 0 assignments / 7.6 ms (later loaded runs 9–12 ms). Idle background: 0 editor redraws before and after.
+- 50 commits with a 10,000-point stroke: baseline 369.7 ms / 51 copies; optimized 1.04 ms / 1 immutable shared stroke.
 
-Performance baseline measured in new regression tests: synchronous burst of 240 pointer moves caused 241 draws and 482 backing-size assignments, 23.3 ms; idle background caused 0 editor draws. Fifty history commits with one 10,000-point stroke: 369.7 ms, 51 duplicate stroke objects. Next: rAF batching/conditional sizing and owned immutable snapshot sharing; these performance regression tests currently fail by design.
-
-Performance changes verified: same burst now 1 draw, 0 backing assignments, 7.6 ms; idle background still 0 draws. History benchmark now 1.04 ms, 1 shared frozen stroke across 51 snapshots. Timings are local synthetic measurements, not universal FPS claims. All 124 unit tests and 3 focused Chromium tests passed. Ownership isolates external mutable inputs; internal frozen annotations share safely, texture lifetime collector remains unchanged.
-
-## Release evidence
-Pending. No publication claimed.
-
-## Review and compatibility
-- Independent read-only review found two P2 bugs: keyboard focus remained on toolbar; zero-delta selection snapped cropped objects. Both reproduced with failing tests, fixed, and reviewer confirmed fixes; no further material issue found.
-- New tools/PNG/WebP/mobile theme scenarios passed Chromium and WebKit (16 tests). Fresh isolated browser downloads fixed missing `mozglue`/Chrome side-by-side cache errors without touching shared cache. Native Chromium 125%/200% zoom now passes. Firefox desktop new-tool workflows pass; fixed test-only assumptions about pointerId and DPR before the final rerun.
-- ESLint, typecheck, 125 unit tests, production build and production dependency audit passed; audit 0 vulnerabilities.
-- Real touch pencil/selection, mixed text/pencil/crop/texture history and preview URL lifecycle checks added. Next: final browser run, clean clone/install, documentation/screenshots, commit and ordinary push, inspect Actions/Pages.
-- Real Chromium touch pencil/selection passed without page scrolling and with exactly two actions. Mixed history and pending-preview/URL cleanup: 6 passed across Chromium/Firefox/WebKit.
-- WebKit worker lacks OffscreenCanvas: added a bounded temporary HTMLCanvas crop transfer fallback, preserving worker matching/mask sanitization, generation checks and release. Eyedropper uses 1×1 HTMLCanvas. Independent reviewer confirmed privacy/resource correctness; fallback can briefly block the main thread while reading a large crop.
-- Added actual synthetic WebP fixture (including alpha) so cross-browser load tests do not accidentally test a PNG fallback from unsupported WebP encoders. Both CI/Pages now install and run all three browser projects. Physical Safari/iOS and Android devices remain outside available testing.
+## Compatibility and limitations
+- WebKit worker lacks OffscreenCanvas in the available Windows port: a temporary HTMLCanvas crop is transferred to the worker; matching and hidden-area sanitization remain in the worker. Canvas memory is released in finally. Large crop readback can briefly pause the main thread. Eyedropper uses a 1×1 HTMLCanvas.
+- Initial shared browser cache could not launch full Chromium/Firefox (side-by-side dependency errors); isolated fresh browser downloads resolved this without modifying the shared cache.
+- Physical Safari/iOS/Android devices were unavailable. WebKit is engine testing, not a claim of physical Safari validation.
+- Animated WebP/APNG remain unsupported. Text up to 2000 characters, 8–200px; pencil width 1–80px, up to 10,000 intermediate points. Existing upload/texture budgets remain.
+- Local processing is preserved; absolute privacy, automatic private-data detection and physical memory erasure are not promised. Inspect PNG after changing protective objects.

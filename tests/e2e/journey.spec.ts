@@ -48,6 +48,7 @@ test('main journey: cover synthetic email/token, annotate, crop undo redo and re
 
 test('Tab focus and keyboard tool activation expose correct states, allow undo, and retain visible focus',async({page})=>{
   await page.goto('./')
+  await expect(page.getByRole('button',{name:'Светлая тема',exact:true})).toBeVisible()
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button',{name:'Светлая тема',exact:true})).toBeFocused()
   await page.keyboard.press('Tab')
