@@ -1,40 +1,25 @@
-# Publish the prepared release
+# Публикация BeforeShare
 
-Current status: ready for publication locally. No GitHub repository, deployment or public demo is claimed. All screenshots and demo images contain synthetic data only.
+Репозиторий: https://github.com/lolztim13-bit/beforeshare
 
-## Account steps
+Приложение: https://lolztim13-bit.github.io/beforeshare/
 
-1. Sign in to GitHub. Create a **public** repository named **beforeshare**, without automatically adding a README, license or gitignore. If it already exists, inspect its contents first; do not overwrite an unrelated project.
-2. In PowerShell, open the sanitized public-release checkout (the original development history remains private). Inspect the current branch/status and configured remotes:
+## Проверенный выпуск — 2026-10-10
 
-```powershell
-cd "$env:USERPROFILE\OneDrive\Desktop\beforeshare\work\public-release"
-git status
-git remote -v
-```
+Все 80 исходных файлов опубликованы в main. CI и Pages завершились успешно. Из чистого клона прошли npm ci, lint, typecheck, 108 unit-тестов, build и 41 браузерный сценарий. npm сообщил о 0 уязвимостей. Восемь дополнительных сценариев прошли непосредственно на GitHub Pages в Chromium и Firefox, включая загрузку, скрытие данных, обрезку, undo/redo, экспорт и повторное открытие PNG.
 
-3. This prepared checkout has no remote. Copy the new repository's HTTPS clone URL from GitHub, then run:
+Основной язык README, описания репозитория и приложения — русский. Локальные настройки, зависимости, временные файлы и секреты исключены через .gitignore. Синтетические fixtures и демонстрационные изображения входят в исходники; пользовательские фотографии не публикуются.
 
-```powershell
-$releaseRemote = Read-Host 'Paste the HTTPS clone URL copied from GitHub'
-git remote add origin $releaseRemote
-git branch -M main
-git push -u origin main
-```
+## Следующие обновления
 
-If origin is already present, compare it with the intended repository and keep the correct existing remote; do not run remote add again or overwrite it blindly. Authenticate when Git asks. Do not force-push.
+1. Работай с проверенным публичным клоном и веткой main. Не отправляй исходную локальную историю разработки: в ней сохранялись машинные пути.
+2. Перед коммитом проверь git diff, git status и авторский email. Для публичной истории используй адрес GitHub noreply или служебную идентичность; не помещай личную почту, пароли или токены в файлы и сообщения коммитов.
+3. Выполни команды из README. Отправь проверенный коммит в main.
+4. Дождись зелёных CI и Pages в Actions. Pages публикует только dist после прохождения всех проверок.
+5. Проверь реальный сайт: загрузка → скрытие → PNG; открой скачанный файл отдельно.
 
-4. Open repository **Settings → Pages → Build and deployment → Source → GitHub Actions**.
-5. Open **Actions → Pages → Run workflow**, select main and run it. The initial main push may precede the Pages setting; this manual rerun handles that case. Wait for both build and deploy to succeed. Open the actual URL reported by the deployment's github-pages environment.
-6. In a fresh browser context at that real URL: upload tests/fixtures/synthetic-account.png, cover both fields, add an arrow/two markers, crop, undo/redo, download PNG and open the result separately. Check crop dimensions and covered content. Check favicon, styles and no failed script/Worker requests.
-7. Only after that succeeds, add the verified demo URL to README and the repository's About section. Commit/push that README update. If deployment fails, inspect the Actions log/report before claiming publication.
+## Настройки хостинга
 
-## Build paths
+Settings → Pages → Source: GitHub Actions. Production-путь определяется GITHUB_REPOSITORY; для этого репозитория это /beforeshare/. Локальный dev работает на /. Для другого хостинга задавай VITE_BASE_PATH одинаково при сборке и проверках.
 
-GitHub Actions passes GITHUB_REPOSITORY automatically. Project repositories build to /repository-name/; owner.github.io builds to /. Without that variable the default is /beforeshare/. Local development remains /. For custom-domain hosting, set VITE_BASE_PATH=/ consistently for build and tests.
-
-The CI workflow runs on push/PR; Pages runs on pushes to main and workflow_dispatch. Deployment depends on all quality gates, using the same production path for build and browser tests. Only dist is published. Source files, fixtures, history and ignored test browser profiles are excluded from that artifact.
-
-## Workflow references
-
-Configuration follows the official [Vite static deployment guide](https://vite.dev/guide/static-deploy.html) and [GitHub Pages custom workflow guide](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages). Action tags were resolved against their official actions/* Git repositories on 2026-10-10; workflow files pin full SHAs. Reverify official action releases and rerun all checks before future updates.
+Workflow использует полные SHA официальных actions. Только deploy получает pages:write и id-token:write; он зависит от успешного build. Подробности приватности и ограничения проверок — в PRIVACY.md.

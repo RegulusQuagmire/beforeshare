@@ -315,3 +315,15 @@ The cleaned public snapshot is the only publication source; the original Desktop
 ## Repository presentation — 2026-10-10
 
 User delegated naming, repository styling and publication. Retained BeforeShare as the public name; added an original SVG banner, concise English README with Russian introduction, synthetic before/after examples, feature and privacy summaries, CI/license badges. No app behavior changed. GitHub login works, but repository listing is empty and the intended repository currently returns 404; publication and live-site verification remain pending.
+
+
+## Публичная публикация и чистый клон — 2026-10-10
+
+- Создан публичный lolztim13-bit/beforeshare; опубликованы все 80 отслеживаемых файлов, без старой локальной истории, временных файлов и зависимостей.
+- README и описание репозитория переведены на русский, добавлены технологии, установка, запуск, ограничения, примеры и проверенный URL.
+- Чистый git clone: npm ci (0 уязвимостей), lint, typecheck, 108 unit-тестов, build — успешно. Все 80 файлов совпали с проверенной копией с учётом перевода строк.
+- Полный production e2e из чистого клона: 41/41 (Chromium и Firefox).
+- GitHub CI и Pages для fd59648 — успешно.
+- Реальный https://lolztim13-bit.github.io/beforeshare/: 8/8 сценариев Chromium/Firefox, включая экспорт и повторное открытие PNG, проверку CSS/JS/favicon и отсутствие ошибок страницы.
+- Проверка 14 публичных коммитов и исходников не нашла распространённых ключей, токенов, приватных ключей или машинных путей. Это поиск известных признаков, не абсолютная гарантия отсутствия всех возможных секретов.
+- Отдельно обнаружена личная почта в авторских метаданных веб-коммитов. Подготовка обезличенного корневого снимка сохраняет текущий код и локальную историю; отправка исправленной истории требует отдельной авторизации Git на запись. До её выполнения этот пункт остаётся открытым.
