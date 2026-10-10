@@ -8,6 +8,8 @@ test('dark landing respects reduced motion and stays keyboard accessible on a na
   expect(await page.evaluate(() => document.getAnimations().filter(a => a.playState === 'running').length)).toBe(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.keyboard.press('Tab')
+  await expect(page.getByRole('button',{name:'Светлая тема',exact:true})).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: 'Выбрать изображение', exact: true })).toBeFocused()
   expect(await page.locator(':focus').evaluate(el => parseFloat(getComputedStyle(el).outlineWidth))).toBeGreaterThanOrEqual(2)
 })

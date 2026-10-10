@@ -49,6 +49,8 @@ test('main journey: cover synthetic email/token, annotate, crop undo redo and re
 test('Tab focus and keyboard tool activation expose correct states, allow undo, and retain visible focus',async({page})=>{
   await page.goto('./')
   await page.keyboard.press('Tab')
+  await expect(page.getByRole('button',{name:'Светлая тема',exact:true})).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(page.getByRole('button',{name:'Выбрать изображение',exact:true})).toBeFocused()
   expect(await page.locator(':focus').evaluate(el=>{const style=getComputedStyle(el);return style.outlineStyle!=='none' && parseFloat(style.outlineWidth)>=2})).toBe(true)
   await page.getByLabel('Файл изображения').setInputFiles(path.resolve('tests/fixtures/synthetic-account.png'))
