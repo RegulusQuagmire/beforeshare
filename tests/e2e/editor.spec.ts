@@ -59,12 +59,14 @@ test('arrow and two numbered clicks are separate reversible actions', async ({ p
 
 test('Escape, pointercancel, tool change and lost capture discard drafts', async ({ page }) => {
   await openImage(page)
-  const box = (await page.locator('canvas').boundingBox())!
   const original = await pixel(page, 40, 40)
   for (const cancel of ['escape', 'pointercancel', 'tool', 'capture']) {
-    await page.mouse.move(box.x + 20, box.y + 20)
+    // Toolbar clicks can scroll the page; each gesture needs current viewport coordinates.
+    await page.locator('canvas').scrollIntoViewIfNeeded()
+    const box = (await page.locator('canvas').boundingBox())!
+    await page.mouse.move(box.x + 20 / 320 * box.width, box.y + 20 / 180 * box.height)
     await page.mouse.down()
-    await page.mouse.move(box.x + 80, box.y + 70)
+    await page.mouse.move(box.x + 80 / 320 * box.width, box.y + 70 / 180 * box.height)
     await expect.poll(() => pixel(page, 40, 40)).toEqual([0, 0, 0, 255])
     if (cancel === 'escape') await page.keyboard.press('Escape')
     if (cancel === 'pointercancel') await page.locator('canvas').dispatchEvent('pointercancel', { pointerId: 1 })
