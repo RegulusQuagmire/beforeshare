@@ -6,7 +6,7 @@ export function createDocument(width: number, height: number): EditorDocument {
 }
 
 export function appendAnnotation(doc: EditorDocument, item: Annotation): EditorDocument {
-  return { ...doc, annotations: [...doc.annotations, structuredClone(item)] }
+  return { crop: { ...doc.crop }, annotations: [...doc.annotations, structuredClone(item)] }
 }
 
 export function documentsEqual(a: EditorDocument, b: EditorDocument): boolean {

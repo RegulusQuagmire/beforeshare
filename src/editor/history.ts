@@ -1,17 +1,34 @@
 import { documentsEqual } from './document'
-import type { EditorDocument, HistoryState } from './types'
+import type { Annotation, EditorDocument, HistoryState } from './types'
 
 const LIMIT = 50
+const owned = new WeakSet<Annotation>()
+
+function freezeTree(value:object):void {
+  for(const child of Object.values(value))if(child!==null&&typeof child==='object')freezeTree(child)
+  Object.freeze(value)
+}
+
+function snapshot(doc:EditorDocument):EditorDocument {
+  const annotations=doc.annotations.map(item=>{
+    // Only objects cloned and frozen here can be shared across snapshots.
+    if(owned.has(item))return item
+    const copy=structuredClone(item);freezeTree(copy);owned.add(copy);return copy
+  })
+  const result={crop:{...doc.crop},annotations}
+  Object.freeze(result.crop);Object.freeze(annotations);Object.freeze(result)
+  return result
+}
 
 export function createHistory(doc: EditorDocument): HistoryState {
-  return { past: [], present: structuredClone(doc), future: [] }
+  return { past: [], present: snapshot(doc), future: [] }
 }
 
 export function commit(history: HistoryState, next: EditorDocument): HistoryState {
   if (documentsEqual(history.present, next)) return history
   return {
     past: [...history.past, history.present].slice(-LIMIT),
-    present: structuredClone(next),
+    present: snapshot(next),
     future: [],
   }
 }

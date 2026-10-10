@@ -70,7 +70,8 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
       stage.style.width=view.surfaceWidth+'px';stage.style.height=view.surfaceHeight+'px'
       target.style.left=view.canvas.x+'px';target.style.top=view.canvas.y+'px'
       target.style.width=view.canvas.width+'px';target.style.height=view.canvas.height+'px'
-      target.width=view.backingWidth;target.height=view.backingHeight
+      if(target.width!==view.backingWidth)target.width=view.backingWidth
+      if(target.height!==view.backingHeight)target.height=view.backingHeight
       const draft=gesture.current
       const editing=draft?.item?transformAnnotation(draft.item,draft.handle??'move',draft.from,draft.to,doc.crop):null
       let scene=textureDraft ? {...doc,annotations:[...doc.annotations,textureDraft]} : doc
@@ -91,9 +92,11 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
       }
       onScaleChange(Math.round(view.cssScale*100))
     }
-    redraw.current=draw;draw()
-    const observer=new ResizeObserver(draw);observer.observe(host)
-    const resize=()=>{cancelCrop();draw()}
+    let frame:number|null=null
+    const schedule=()=>{if(frame===null)frame=requestAnimationFrame(()=>{frame=null;draw()})}
+    redraw.current=schedule;draw()
+    const observer=new ResizeObserver(schedule);observer.observe(host)
+    const resize=()=>{cancelCrop();schedule()}
     window.addEventListener('resize',resize)
     let resolution:MediaQueryList
     const watch=()=>{
@@ -101,9 +104,9 @@ export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropD
       resolution=window.matchMedia('(resolution: '+(window.devicePixelRatio||1)+'dppx)')
       resolution.addEventListener('change',density)
     }
-    const density=()=>{draw();watch()}
+    const density=()=>{schedule();watch()}
     watch()
-    return ()=>{observer.disconnect();window.removeEventListener('resize',resize);resolution.removeEventListener('change',density);redraw.current=()=>{}}
+    return ()=>{if(frame!==null)cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('resize',resize);resolution.removeEventListener('change',density);redraw.current=()=>{}}
   },[image,doc,tool,panning,disabled,cropDraft,onCancelCrop,onScaleChange,onError,zoom,color,picking,assets,textureDraft,lineWidth])
 
   function point(event:PointerEvent<HTMLCanvasElement>) {

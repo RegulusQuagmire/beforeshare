@@ -24,5 +24,7 @@ WebP: RIFF chunk bounds/padding, VP8X/VP8/VP8L dimensions (before native decodin
 
 Performance baseline measured in new regression tests: synchronous burst of 240 pointer moves caused 241 draws and 482 backing-size assignments, 23.3 ms; idle background caused 0 editor draws. Fifty history commits with one 10,000-point stroke: 369.7 ms, 51 duplicate stroke objects. Next: rAF batching/conditional sizing and owned immutable snapshot sharing; these performance regression tests currently fail by design.
 
+Performance changes verified: same burst now 1 draw, 0 backing assignments, 7.6 ms; idle background still 0 draws. History benchmark now 1.04 ms, 1 shared frozen stroke across 51 snapshots. Timings are local synthetic measurements, not universal FPS claims. All 124 unit tests and 3 focused Chromium tests passed. Ownership isolates external mutable inputs; internal frozen annotations share safely, texture lifetime collector remains unchanged.
+
 ## Release evidence
 Pending. No publication claimed.
