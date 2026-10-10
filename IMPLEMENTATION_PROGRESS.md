@@ -1,7 +1,7 @@
 # BeforeShare 2.0 — implementation progress
 
 ## Current stage (2026-10-10)
-Implementation, review, documentation and local release checks complete. Next: ordinary push to main, verify remote SHA, wait for CI/Pages and test the public URL. Publication is not yet claimed.
+Implementation, review, documentation and release verification complete. Code release `5cd6974abcf86eefe098886106845f19dd8da799` was pushed normally to main; remote SHA matched. CI and Pages succeeded; public application verified. Final documentation commit records this evidence; its SHA is available in git log and the final report.
 
 ## Baseline and preservation
 - Existing repository cloned into an empty workspace; baseline `8db48bc`. Work isolated on `beforeshare-2`.
@@ -31,6 +31,11 @@ Implementation, review, documentation and local release checks complete. Next: o
 - Clean local clone of `6b67a9b`: npm ci, ESLint, TypeScript, 127 unit tests and build passed. Subsequent changes only documentation/screenshots and waiting for UI readiness in an existing keyboard test.
 - Screenshots generated from synthetic-account fixture and visually inspected.
 - Git push dry run authenticated successfully; remote main still `8db48bc` before release.
+- Clean clone directly from GitHub at `5cd6974`: npm ci, ESLint, TypeScript, 127 unit tests and build passed; zero audit vulnerabilities.
+- Ordinary `git push origin main`: succeeded via fast-forward; `git ls-remote` confirmed exact code-release SHA. No force push, deletions or history rewrite.
+- CI: success, https://github.com/lolztim13-bit/beforeshare/actions/runs/38056324105 . Pages: success, https://github.com/lolztim13-bit/beforeshare/actions/runs/38056324115 . Both workflows ran all three browser projects.
+- Public https://lolztim13-bit.github.io/beforeshare/ returned HTTP 200 and expected `index-BKZokBc5.js` bundle. Four real published Chromium scenarios passed: original image→masks/annotations/crop→download/reopen journey; multiline text edit/pencil/preview; actual WebP and damaged replacement; same-byte preview download and opaque protection/no operation network.
+- Remaining verification limit: physical Safari/iOS/Android devices unavailable. No outstanding implementation requirement identified; documented format/texture/font limits remain intentional.
 
 ## Performance measurements
 Same local synthetic cases, not universal FPS claims:
