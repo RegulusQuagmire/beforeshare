@@ -6,6 +6,7 @@ import { renderCropDraft, renderDraft, renderScene } from './render'
 import type { Annotation, EditorDocument, LoadedImage, Point, Rect, Tool } from './types'
 
 type Props = {
+  panning:boolean
   cropDraft:Rect|null; onCropDraft:(rect:Rect)=>void; onCancelCrop:()=>void
   image:LoadedImage; doc:EditorDocument; tool:Tool; disabled?:boolean
   zoom:number|null; color:string; picking:boolean; onPick:(color:string)=>void
@@ -15,9 +16,10 @@ type Props = {
 }
 type Gesture={pointerId:number;from:Point;to:Point}
 
-export function EditorCanvas({cropDraft,onCropDraft,onCancelCrop,image,doc,tool,disabled=false,zoom,color,picking,onPick,assets,textureDraft,onTexture,onCommit,onScaleChange,onError}:Props) {
+export function EditorCanvas({panning,cropDraft,onCropDraft,onCancelCrop,image,doc,tool,disabled=false,zoom,color,picking,onPick,assets,textureDraft,onTexture,onCommit,onScaleChange,onError}:Props) {
   const viewport=useRef<HTMLDivElement>(null), surface=useRef<HTMLDivElement>(null), canvas=useRef<HTMLCanvasElement>(null)
   const gesture=useRef<Gesture|null>(null), viewRef=useRef<PreviewView|null>(null)
+  const pan=useRef<{id:number;x:number;y:number;left:number;top:number}|null>(null)
   const redraw=useRef<()=>void>(()=>{})
   function cancelGesture() {
     const active=gesture.current;gesture.current=null
@@ -25,13 +27,23 @@ export function EditorCanvas({cropDraft,onCropDraft,onCancelCrop,image,doc,tool,
     redraw.current()
   }
   useEffect(()=>{
-    const key=(event:KeyboardEvent)=>{if(event.key==='Escape' && gesture.current){event.preventDefault();cancelGesture()}}
+    const key=(event:KeyboardEvent)=>{
+      if(event.key!=='Escape')return
+      const active=pan.current,host=viewport.current
+      if(active){
+        event.preventDefault();pan.current=null
+        if(host?.hasPointerCapture(active.id))host.releasePointerCapture(active.id)
+      }
+      if(gesture.current){event.preventDefault();cancelGesture()}
+    }
     window.addEventListener('keydown',key)
     return ()=>window.removeEventListener('keydown',key)
   },[])
   useLayoutEffect(()=>{
     const host=viewport.current,stage=surface.current,target=canvas.current
     if(!host || !stage || !target) return
+    const dragging=pan.current;pan.current=null
+    if(dragging && host.hasPointerCapture(dragging.id))host.releasePointerCapture(dragging.id)
     const active=gesture.current;gesture.current=null
     if(active && target.hasPointerCapture(active.pointerId)) target.releasePointerCapture(active.pointerId)
     const ctx=target.getContext('2d')
@@ -83,13 +95,13 @@ export function EditorCanvas({cropDraft,onCropDraft,onCancelCrop,image,doc,tool,
     const density=()=>{draw();watch()}
     watch()
     return ()=>{observer.disconnect();window.removeEventListener('resize',resize);resolution.removeEventListener('change',density);redraw.current=()=>{}}
-  },[image,doc,tool,disabled,cropDraft,onCancelCrop,onScaleChange,onError,zoom,color,picking,assets,textureDraft])
+  },[image,doc,tool,panning,disabled,cropDraft,onCancelCrop,onScaleChange,onError,zoom,color,picking,assets,textureDraft])
 
   function point(event:PointerEvent<HTMLCanvasElement>) {
     return pointInView({x:event.clientX,y:event.clientY},event.currentTarget.getBoundingClientRect(),viewRef.current!,doc.crop)
   }
   function down(event:PointerEvent<HTMLCanvasElement>) {
-    if(disabled || gesture.current || !event.isPrimary || event.button!==0) return
+    if(panning || disabled || gesture.current || !event.isPrimary || event.button!==0) return
     event.preventDefault()
     const from=point(event);gesture.current={pointerId:event.pointerId,from,to:from}
     event.currentTarget.setPointerCapture(event.pointerId);redraw.current()
@@ -126,7 +138,23 @@ export function EditorCanvas({cropDraft,onCropDraft,onCancelCrop,image,doc,tool,
   }
   function cancel(event:PointerEvent<HTMLCanvasElement>){if(gesture.current?.pointerId===event.pointerId) cancelGesture()}
 
-  return <div className="canvas-viewport" ref={viewport} onScroll={()=>{cancelGesture()}}>
+  function panDown(event:PointerEvent<HTMLDivElement>) {
+    if(!panning||disabled||event.pointerType==='touch'||!event.isPrimary||event.button!==0)return
+    event.preventDefault();const host=event.currentTarget
+    pan.current={id:event.pointerId,x:event.clientX,y:event.clientY,left:host.scrollLeft,top:host.scrollTop}
+    host.setPointerCapture(event.pointerId)
+  }
+  function panMove(event:PointerEvent<HTMLDivElement>) {
+    const active=pan.current;if(!active||active.id!==event.pointerId)return
+    event.currentTarget.scrollLeft=active.left+active.x-event.clientX
+    event.currentTarget.scrollTop=active.top+active.y-event.clientY
+  }
+  function panEnd(event:PointerEvent<HTMLDivElement>) {
+    if(pan.current?.id!==event.pointerId)return
+    pan.current=null
+    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+  return <div className={'canvas-viewport'+(panning?' panning':'')} ref={viewport} onPointerDown={panDown} onPointerMove={panMove} onPointerUp={panEnd} onPointerCancel={panEnd} onLostPointerCapture={panEnd} onScroll={()=>{cancelGesture()}}>
     <div className="canvas-frame" ref={surface}>
       <canvas ref={canvas} aria-describedby="editor-help editor-shortcuts" aria-label={'Загруженное изображение, '+doc.crop.width+' на '+doc.crop.height+' пикселей'}
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={cancel} onLostPointerCapture={cancel} />
