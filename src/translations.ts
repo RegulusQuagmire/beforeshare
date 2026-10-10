@@ -1,5 +1,6 @@
 // Russian source messages also identify errors returned by the local worker.
 export const english: Readonly<Record<string, string>> = {
+  'Подсказки и сочетания клавиш': 'Tips and keyboard shortcuts',
   'Перед отправкой': 'Before sharing',
   'Редактирование изображения': 'Editing image',
   'Светлая тема': 'Light theme', 'Тёмная тема': 'Dark theme',

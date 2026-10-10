@@ -118,7 +118,7 @@ export default function App() {
     if(selected&&editor.document&&selected.kind!=='texture')editor.commitDocument(updateAnnotation(editor.document,{...selected,color:value} as Annotation))
   }
 
-  return <><AmbientBackdrop theme={theme}/><main>
+  return <><AmbientBackdrop theme={theme}/><main className={image?"editor-page":"landing-page"}>
     <UploadZone busy={busy||textureLocked||exporting||!!textDraft||preview} hasImage={!!image} onFiles={openFiles}>
       <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>{t("Перед отправкой")}</h1></div><button type="button" className="secondary language-toggle" lang={language==='ru'?'en':'ru'} onClick={()=>setLanguage(language==='ru'?'en':'ru')}>{language==='ru'?'English':'Русский'}</button>{image&&<p className="stage">{t("Редактирование изображения")}</p>}<button type="button" className="secondary theme-toggle" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?t("Светлая тема"):t("Тёмная тема")}</button></header>
       {!image&&<section className="intro">
@@ -138,15 +138,15 @@ export default function App() {
       </section>}
       {image&&<>
         <Toolbar panning={panning} onPan={()=>{setPicking(false);setPanning(value=>!value)}} tool={editor.tool} onToolChange={tool=>{setSelectedId(null);setPanning(false);setPicking(false);editor.setTool(tool)}} disabled={locked} canUndo={editor.canUndo} canRedo={editor.canRedo} onUndo={editor.undo} onRedo={editor.redo}/>
-        <div className="view-controls" role="group" aria-label={t("Масштаб и цвет")}>
+        <div className="view-controls zoom-settings" role="group" aria-label={t("Масштаб и цвет")}>
           <label className="zoom-control">{t("Масштаб")}<input type="range" aria-label={t("Масштаб изображения")} min="25" max="400" step="1" value={zoom??Math.max(25,Math.min(400,scale))} disabled={locked} onChange={event=>changeZoom(Number(event.target.value))}/>
           </label>
           <button type="button" className="secondary" disabled={locked} onClick={()=>changeZoom(null)}>{t("Вписать")}</button>
-          <label className="color-control">{t("Цвет заливки")}<input aria-label={t("Цвет заливки")} type="color" value={color} disabled={locked} onChange={event=>setColor(event.target.value)}/></label>
+          {!panning&&["redact","arrow","number","text","pencil"].includes(editor.tool)&&<label className="color-control">{t("Цвет заливки")}<input aria-label={t("Цвет заливки")} type="color" value={color} disabled={locked} onChange={event=>setColor(event.target.value)}/></label>}
           <button type="button" className="secondary" disabled={locked} aria-pressed={picking} onClick={()=>{setPanning(false);setPicking(!picking)}}>{t("Пипетка")}</button>
-          {editor.tool==='pencil'&&<label>{t("Толщина линии")}<input aria-label={t("Толщина линии")} type="number" min={1} max={80} value={lineWidth} disabled={locked} onChange={e=>setLineWidth(Math.max(1,Math.min(80,Number(e.target.value)||1)))}/></label>}
+          {editor.tool==='pencil'&&!panning&&<label>{t("Толщина линии")}<input aria-label={t("Толщина линии")} type="number" min={1} max={80} value={lineWidth} disabled={locked} onChange={e=>setLineWidth(Math.max(1,Math.min(80,Number(e.target.value)||1)))}/></label>}
         </div>
-        {editor.tool==='select'&&!panning&&<div className="view-controls" role="group" aria-label={t("Выбранный объект")}>
+        {editor.tool==='select'&&!panning&&<div className="view-controls object-settings" role="group" aria-label={t("Выбранный объект")}>
           <label>{t("Объект")}<select aria-label={t("Объект")} value={selected?.id??''} disabled={locked} onChange={e=>setSelectedId(e.target.value||null)}>
             <option value="">{t("Нет выделения")}</option>
             {editor.document?.annotations.map((item,i)=><option key={item.id} value={item.id}>{i+1}. {item.kind==='text'?item.text.slice(0,25):item.kind==='texture'?t("Текстура"):t(toolHelp[item.kind]).split('.')[0]}</option>)}
@@ -176,8 +176,8 @@ export default function App() {
             onScaleChange={setScale} onError={setError} zoom={zoom} color={color} picking={picking} onPick={pick}
             assets={texture.assets} textureDraft={texture.preview} onTexture={texture.request}/>
         </section>
-        <button type="button" className="export-button" disabled={locked} onClick={savePng}>{t("Скачать PNG")}</button>
-        <button type="button" className="secondary" disabled={locked} onClick={()=>{setPicking(false);setPreview(true)}}>{t("Предпросмотр PNG")}</button>
+        <div className="export-actions"><button type="button" className="export-button" disabled={locked} onClick={savePng}>{t("Скачать PNG")}</button>
+        <button type="button" className="secondary" disabled={locked} onClick={()=>{setPicking(false);setPreview(true)}}>{t("Предпросмотр PNG")}</button></div>
         <p className="dimensions">{editor.document.crop.width} × {editor.document.crop.height} px <span>{t("Масштаб")} {scale}%</span></p>
       </>}
     </UploadZone>
@@ -185,8 +185,8 @@ export default function App() {
     {preview&&image&&editor.document&&<PngPreview image={image} doc={editor.document} assets={texture.assets} onClose={()=>setPreview(false)}/>}
     <p className="privacy">{t("Изображение обрабатывается в вашем браузере и не отправляется на сервер")}</p>
     {image&&<>
-      <p className="note" id="editor-help">{panning?t("Перемещение: двигайте картинку пальцем или перетаскивайте мышью. Для выделения выберите «Скрыть» или другой инструмент."):t(toolHelp[editor.tool])}</p>
-      <p className="shortcuts" id="editor-shortcuts">{t("Отмена:")}<kbd>Ctrl/Cmd+Z</kbd>{t("· Повтор:")}<kbd>Ctrl/Cmd+Shift+Z</kbd>{t("или")}<kbd>Ctrl+Y</kbd>{t("на Windows ·")}<kbd>Escape</kbd>{t("— отмена текущего жеста.")}</p>
+      <details className="editor-guide"><summary>{t("Подсказки и сочетания клавиш")}</summary><p className="note" id="editor-help">{panning?t("Перемещение: двигайте картинку пальцем или перетаскивайте мышью. Для выделения выберите «Скрыть» или другой инструмент."):t(toolHelp[editor.tool])}</p>
+      <p className="shortcuts" id="editor-shortcuts">{t("Отмена:")}<kbd>Ctrl/Cmd+Z</kbd>{t("· Повтор:")}<kbd>Ctrl/Cmd+Shift+Z</kbd>{t("или")}<kbd>Ctrl+Y</kbd>{t("на Windows ·")}<kbd>Escape</kbd>{t("— отмена текущего жеста.")}</p></details>
     </>}
   </main></>
 }

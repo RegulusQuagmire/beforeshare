@@ -30,7 +30,7 @@ export function UploadZone({ busy, hasImage, onFiles, children }: Props) {
       <input ref={input} type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp" disabled={busy} hidden
         aria-label={t("Файл изображения")}
         onChange={event => { onFiles(Array.from(event.target.files ?? [])); event.target.value = '' }} />
-      <button type="button" disabled={busy} onClick={() => input.current?.click()}>
+      <button type="button" aria-label={hasImage ? t("Открыть другое") : t("Выбрать изображение")} disabled={busy} onClick={() => input.current?.click()}>
         {hasImage ? t("Открыть другое") : t("Выбрать изображение")}
       </button>
       {!hasImage && <p className="limits">{t("PNG, JPEG или WebP · до 20 MiB · до 20 Мп · до 6000 px по стороне")}</p>}
