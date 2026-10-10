@@ -6,9 +6,7 @@ export function createDocument(width: number, height: number): EditorDocument {
 }
 
 export function appendAnnotation(doc: EditorDocument, item: Annotation): EditorDocument {
-  const next = structuredClone(doc)
-  next.annotations.push(structuredClone(item))
-  return next
+  return { ...doc, annotations: [...doc.annotations, structuredClone(item)] }
 }
 
 export function documentsEqual(a: EditorDocument, b: EditorDocument): boolean {
@@ -18,14 +16,17 @@ export function documentsEqual(a: EditorDocument, b: EditorDocument): boolean {
   return a.annotations.every((item, i) => {
     const other = b.annotations[i]
     if (item.id !== other.id || item.kind !== other.kind) return false
+    if (item === other) return true
+    if (item.kind === 'text' && other.kind === 'text') return item.text === other.text && item.fontSize === other.fontSize && item.color === other.color && item.at.x === other.at.x && item.at.y === other.at.y
+    if (item.kind === 'pencil' && other.kind === 'pencil') return item.color === other.color && item.width === other.width && item.points.length === other.points.length && item.points.every((p,j)=>p.x===other.points[j].x && p.y===other.points[j].y)
     if (item.kind === 'texture' && other.kind === 'texture') return item.assetId === other.assetId && item.rect.x === other.rect.x && item.rect.y === other.rect.y && item.rect.width === other.rect.width && item.rect.height === other.rect.height
     if (item.kind === 'redact' && other.kind === 'redact') {
       return (item.color ?? '#000000').toLowerCase() === (other.color ?? '#000000').toLowerCase() && item.rect.x === other.rect.x && item.rect.y === other.rect.y && item.rect.width === other.rect.width && item.rect.height === other.rect.height
     }
     if (item.kind === 'arrow' && other.kind === 'arrow') {
-      return item.from.x === other.from.x && item.from.y === other.from.y && item.to.x === other.to.x && item.to.y === other.to.y
+      return item.color === other.color && item.from.x === other.from.x && item.from.y === other.from.y && item.to.x === other.to.x && item.to.y === other.to.y
     }
-    return item.kind === 'number' && other.kind === 'number' && item.at.x === other.at.x && item.at.y === other.at.y && item.value === other.value
+    return item.kind === 'number' && other.kind === 'number' && item.color === other.color && item.at.x === other.at.x && item.at.y === other.at.y && item.value === other.value
   })
 }
 

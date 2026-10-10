@@ -16,7 +16,9 @@
 6. Regression/unit/e2e, privacy and limits docs, clean install, commit/push and verify remote/Actions/Pages where available.
 
 ## Current stage
-Analysis complete. Next: failing tests for object selection/transform and new UI workflows, then implementation. User explicitly requested autonomous implementation without repeated design approvals.
+Object geometry/model, selection handles, movement/resizing/endpoints, property color/deletion, keyboard nudging, overlap list, multiline text dialog, sampled smooth pencil and exact PNG preview implemented. Existing pan/theme/backdrop code preserved. 113 unit tests passed; new Chromium object/text/pencil/preview workflows: 2 passed. Typecheck and ESLint passed. Selection properties retain stable layout during gestures.
+
+Next: WebP validation, performance measurements/optimization and expanded cross-browser/mobile/privacy tests. User explicitly requested autonomous implementation without repeated design approvals.
 
 ## Release evidence
 Pending. No publication claimed.

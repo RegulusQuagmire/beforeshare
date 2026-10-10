@@ -2,10 +2,12 @@ import { useEffect, useLayoutEffect, useRef, type PointerEvent } from 'react'
 import { normalizeRect } from './geometry'
 import { pointInView, previewView, type PreviewView } from './view'
 import { appendAnnotation, createAnnotation, cropDocument } from './document'
-import { renderCropDraft, renderDraft, renderScene } from './render'
+import { renderCropDraft, renderDraft, renderScene, renderSelection } from './render'
+import { handleAt, hitTest, strokePoints, transformAnnotation, updateAnnotation, type Handle } from './objects'
 import type { Annotation, EditorDocument, LoadedImage, Point, Rect, Tool } from './types'
 
 type Props = {
+  selectedId:string|null; onSelect:(id:string|null)=>void; onText:(at:Point)=>void; lineWidth:number
   panning:boolean
   cropDraft:Rect|null; onCropDraft:(rect:Rect)=>void; onCancelCrop:()=>void
   image:LoadedImage; doc:EditorDocument; tool:Tool; disabled?:boolean
@@ -14,13 +16,15 @@ type Props = {
   onCommit:(next:EditorDocument)=>void
   onScaleChange:(percent:number)=>void; onError:(message:string)=>void
 }
-type Gesture={pointerId:number;from:Point;to:Point}
+type Gesture={pointerId:number;from:Point;to:Point;item?:Annotation;handle?:Handle;points:Point[]}
 
-export function EditorCanvas({panning,cropDraft,onCropDraft,onCancelCrop,image,doc,tool,disabled=false,zoom,color,picking,onPick,assets,textureDraft,onTexture,onCommit,onScaleChange,onError}:Props) {
+export function EditorCanvas({selectedId,onSelect,onText,lineWidth,panning,cropDraft,onCropDraft,onCancelCrop,image,doc,tool,disabled=false,zoom,color,picking,onPick,assets,textureDraft,onTexture,onCommit,onScaleChange,onError}:Props) {
   const viewport=useRef<HTMLDivElement>(null), surface=useRef<HTMLDivElement>(null), canvas=useRef<HTMLCanvasElement>(null)
   const gesture=useRef<Gesture|null>(null), viewRef=useRef<PreviewView|null>(null)
   const pan=useRef<{id:number;x:number;y:number;left:number;top:number}|null>(null)
   const redraw=useRef<()=>void>(()=>{})
+  const selectedRef=useRef(selectedId)
+  useLayoutEffect(()=>{selectedRef.current=selectedId;redraw.current()},[selectedId])
   function cancelGesture() {
     const active=gesture.current;gesture.current=null
     if(active && canvas.current?.hasPointerCapture(active.pointerId)) canvas.current.releasePointerCapture(active.pointerId)
@@ -67,12 +71,17 @@ export function EditorCanvas({panning,cropDraft,onCropDraft,onCancelCrop,image,d
       target.style.left=view.canvas.x+'px';target.style.top=view.canvas.y+'px'
       target.style.width=view.canvas.width+'px';target.style.height=view.canvas.height+'px'
       target.width=view.backingWidth;target.height=view.backingHeight
-      const scene=textureDraft ? {...doc,annotations:[...doc.annotations,textureDraft]} : doc
+      const draft=gesture.current
+      const editing=draft?.item?transformAnnotation(draft.item,draft.handle??'move',draft.from,draft.to,doc.crop):null
+      let scene=textureDraft ? {...doc,annotations:[...doc.annotations,textureDraft]} : doc
+      if(editing) scene=updateAnnotation(scene,editing)
       renderScene(ctx,image,scene,view.scale,assets,view.source)
       if(cropDraft) renderCropDraft(ctx,doc.crop,cropDraft,view.scale,view.source)
-      const draft=gesture.current
+      const selected=editing??doc.annotations.find(item=>item.id===selectedRef.current)
+      if(selected&&!panning&&!picking)renderSelection(ctx,selected,view.scale,view.cssScale,view.source)
       if(draft && !picking) {
         if(tool==='crop') renderCropDraft(ctx,doc.crop,normalizeRect(draft.from,draft.to,doc.crop),view.scale,view.source)
+        else if(tool==='pencil')renderDraft(ctx,doc.crop,{id:'draft',kind:'pencil',points:draft.points,width:lineWidth,color},view.scale,assets,view.source)
         else {
           try {
             const item=createAnnotation(doc,tool==='texture'?'redact':tool,draft.from,draft.to,'draft',color)
@@ -95,7 +104,7 @@ export function EditorCanvas({panning,cropDraft,onCropDraft,onCancelCrop,image,d
     const density=()=>{draw();watch()}
     watch()
     return ()=>{observer.disconnect();window.removeEventListener('resize',resize);resolution.removeEventListener('change',density);redraw.current=()=>{}}
-  },[image,doc,tool,panning,disabled,cropDraft,onCancelCrop,onScaleChange,onError,zoom,color,picking,assets,textureDraft])
+  },[image,doc,tool,panning,disabled,cropDraft,onCancelCrop,onScaleChange,onError,zoom,color,picking,assets,textureDraft,lineWidth])
 
   function point(event:PointerEvent<HTMLCanvasElement>) {
     return pointInView({x:event.clientX,y:event.clientY},event.currentTarget.getBoundingClientRect(),viewRef.current!,doc.crop)
@@ -103,12 +112,27 @@ export function EditorCanvas({panning,cropDraft,onCropDraft,onCancelCrop,image,d
   function down(event:PointerEvent<HTMLCanvasElement>) {
     if(panning || disabled || gesture.current || !event.isPrimary || event.button!==0) return
     event.preventDefault()
-    const from=point(event);gesture.current={pointerId:event.pointerId,from,to:from}
+    const from=point(event)
+    if(tool==='text'&&!picking){onText(from);return}
+    let item:Annotation|undefined,handle:Handle='move'
+    if(tool==='select'&&!picking) {
+      const tolerance=(event.pointerType==='touch'?18:9)/(viewRef.current?.cssScale??1)
+      const selected=doc.annotations.find(i=>i.id===selectedId)
+      if(selected&&handleAt(selected,from,tolerance)!=='move'){item=selected;handle=handleAt(selected,from,tolerance)}
+      else item=hitTest(doc,from,tolerance)??undefined
+      onSelect(item?.id??null)
+    }
+    gesture.current={pointerId:event.pointerId,from,to:from,item,handle,points:[from]}
     event.currentTarget.setPointerCapture(event.pointerId);redraw.current()
   }
   function move(event:PointerEvent<HTMLCanvasElement>) {
     if(gesture.current?.pointerId!==event.pointerId) return
-    event.preventDefault();gesture.current.to=point(event);redraw.current()
+    event.preventDefault();gesture.current.to=point(event)
+    if(tool==='pencil') {
+      const points=gesture.current.points,p=gesture.current.to,last=points[points.length-1]
+      if(points.length<10000&&Math.hypot(p.x-last.x,p.y-last.y)>=Math.max(0.5,lineWidth/4))points.push(p)
+    }
+    redraw.current()
   }
   function up(event:PointerEvent<HTMLCanvasElement>) {
     const active=gesture.current
@@ -116,6 +140,8 @@ export function EditorCanvas({panning,cropDraft,onCropDraft,onCancelCrop,image,d
     event.preventDefault()
     const to=point(event);cancelGesture()
     if(disabled) return
+    if(tool==='select'&&!picking){if(active.item)onCommit(updateAnnotation(doc,transformAnnotation(active.item,active.handle??'move',active.from,to,doc.crop)));return}
+    if(tool==='pencil'&&!picking){onCommit(appendAnnotation(doc,{id:crypto.randomUUID(),kind:'pencil',points:strokePoints([...active.points,to],Math.max(0.5,lineWidth/4)),width:lineWidth,color}));return}
     if(picking) {
       const sample=new OffscreenCanvas(1,1),ctx=sample.getContext('2d')!
       renderScene(ctx as unknown as CanvasRenderingContext2D,image,doc,1,assets,{x:Math.min(image.width-1,Math.floor(active.from.x)),y:Math.min(image.height-1,Math.floor(active.from.y))})

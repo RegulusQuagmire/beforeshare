@@ -1,10 +1,27 @@
 import type { Annotation, EditorDocument, LoadedImage, Point, Rect } from './types'
+import { annotationBounds, handles } from './objects'
 
-function drawAnnotation(ctx: CanvasRenderingContext2D, item: Extract<Annotation, { kind: 'arrow' | 'number' }>) {
+function drawAnnotation(ctx: CanvasRenderingContext2D, item: Exclude<Annotation, { kind: 'redact' | 'texture' }>) {
+  if(item.kind==='text') {
+    ctx.font=`${item.fontSize}px system-ui`;ctx.textAlign='left';ctx.textBaseline='top';ctx.fillStyle=item.color
+    item.text.split('\n').forEach((line,i)=>ctx.fillText(line,item.at.x,item.at.y+i*item.fontSize*1.25))
+    return
+  }
+  if(item.kind==='pencil') {
+    ctx.beginPath();const first=item.points[0];if(!first)return
+    ctx.moveTo(first.x,first.y)
+    for(let i=1;i<item.points.length;i++) {
+      const p=item.points[i],next=item.points[i+1]??p
+      ctx.quadraticCurveTo(p.x,p.y,(p.x+next.x)/2,(p.y+next.y)/2)
+    }
+    ctx.lineCap='round';ctx.lineJoin='round';ctx.lineWidth=item.width;ctx.strokeStyle=item.color
+    if(item.points.length===1){ctx.arc(first.x,first.y,item.width/2,0,Math.PI*2);ctx.fillStyle=item.color;ctx.fill()}else ctx.stroke()
+    return
+  }
   if (item.kind === 'number') {
     ctx.beginPath()
     ctx.arc(item.at.x, item.at.y, 16, 0, Math.PI * 2)
-    ctx.fillStyle = '#F97316'
+    ctx.fillStyle = item.color ?? '#F97316'
     ctx.fill()
     ctx.lineWidth = 2
     ctx.strokeStyle = '#FFFFFF'
@@ -30,7 +47,7 @@ function drawAnnotation(ctx: CanvasRenderingContext2D, item: Extract<Annotation,
   ctx.strokeStyle = '#FFFFFF'
   ctx.lineWidth = 7
   ctx.stroke()
-  ctx.strokeStyle = '#F97316'
+  ctx.strokeStyle = item.color ?? '#F97316'
   ctx.lineWidth = 4
   ctx.stroke()
 }
@@ -54,7 +71,7 @@ export function renderScene(ctx: CanvasRenderingContext2D, image: LoadedImage, d
     ctx.rect(doc.crop.x, doc.crop.y, doc.crop.width, doc.crop.height)
     ctx.clip()
     ctx.drawImage(image.bitmap, 0, 0)
-    for (const item of doc.annotations) if (item.kind === 'arrow' || item.kind === 'number') drawAnnotation(ctx, item)
+    for (const item of doc.annotations) if (item.kind !== 'redact' && item.kind !== 'texture') drawAnnotation(ctx, item)
     ctx.fillStyle = '#000000'
     for (const item of doc.annotations) {
       if (item.kind !== 'redact' && item.kind !== 'texture') continue
@@ -69,6 +86,20 @@ export function renderScene(ctx: CanvasRenderingContext2D, image: LoadedImage, d
       }
     }
   } finally { ctx.restore() }
+}
+
+export function renderSelection(ctx:CanvasRenderingContext2D,item:Annotation,scale:number,cssScale:number,origin:Point) {
+  const box=annotationBounds(item)
+  ctx.save()
+  ctx.setTransform(scale,0,0,scale,-origin.x*scale,-origin.y*scale)
+  ctx.strokeStyle='#ffffff';ctx.lineWidth=3/cssScale;ctx.strokeRect(box.x,box.y,box.width,box.height)
+  ctx.strokeStyle='#7c3aed';ctx.lineWidth=1.5/cssScale;ctx.setLineDash([5/cssScale,3/cssScale]);ctx.strokeRect(box.x,box.y,box.width,box.height)
+  ctx.setLineDash([])
+  for(const p of handles(item)??[]) {
+    ctx.fillStyle='#ffffff';ctx.fillRect(p.x-5/cssScale,p.y-5/cssScale,10/cssScale,10/cssScale)
+    ctx.strokeRect(p.x-5/cssScale,p.y-5/cssScale,10/cssScale,10/cssScale)
+  }
+  ctx.restore()
 }
 
 export function renderDraft(ctx: CanvasRenderingContext2D, crop: Rect, item: Annotation, scale: number, assets: ReadonlyMap<string, ImageBitmap> = new Map(), origin: Point = crop): void {

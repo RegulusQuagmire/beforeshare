@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { LoadedImage, Tool } from './editor/types'
+import type { Annotation, LoadedImage, Point, Tool } from './editor/types'
+import { appendAnnotation } from './editor/document'
+import { removeAnnotation, transformAnnotation, updateAnnotation } from './editor/objects'
+import { TextDialog, type TextAnnotation } from './editor/TextDialog'
+import { PngPreview } from './editor/PngPreview'
 import { EditorCanvas } from './editor/EditorCanvas'
 import { Toolbar } from './editor/Toolbar'
 import { useEditor } from './editor/useEditor'
@@ -11,6 +15,9 @@ import { AmbientBackdrop } from './AmbientBackdrop'
 import './styles.css'
 
 const toolHelp:Record<Tool,string>={
+  select:'Выберите объект. Перетаскивайте его или квадратные маркеры заливки/стрелки. Стрелки клавиатуры — сдвиг, Delete — удалить, Escape — снять выделение. Для перекрытых объектов используйте список.',
+  text:'Нажмите на изображение и введите подпись. Для изменения выберите текст и нажмите «Редактировать текст».',
+  pencil:'Рисуйте мышью или пальцем. Один штрих — одно действие. Для прокрутки выберите «Перемещение».',
   redact:'Протяните прямоугольник над данными. Заливка полностью непрозрачная; цвет можно выбрать выше.',
   arrow:'Протяните стрелку от начала к месту, на которое хотите указать.',
   number:'Нажмите на изображение, чтобы поставить следующий номер. Доступны номера от 1 до 99.',
@@ -21,6 +28,8 @@ const toolHelp:Record<Tool,string>={
 export default function App() {
   const [theme,setTheme]=useState<'dark'|'light'>('dark')
   const [panning,setPanning]=useState(false)
+  const [selectedId,setSelectedId]=useState<string|null>(null),[textDraft,setTextDraft]=useState<TextAnnotation|null>(null)
+  const [lineWidth,setLineWidth]=useState(4),[preview,setPreview]=useState(false)
   useEffect(()=>{document.documentElement.dataset.theme=theme},[theme])
   const [image,setImage]=useState<LoadedImage|null>(null)
   const [error,setError]=useState(''),[busy,setBusy]=useState(false),[scale,setScale]=useState(100)
@@ -28,11 +37,25 @@ export default function App() {
   const [textureLocked,setTextureLocked]=useState(false)
   const [exporting,setExporting]=useState(false),exportInFlight=useRef(false)
   const current=useRef<LoadedImage|null>(null),loading=useRef(false),mounted=useRef(true)
-  const editor=useEditor(busy||textureLocked||exporting)
+  const editor=useEditor(busy||textureLocked||exporting||!!textDraft||preview)
   const texture=useTexture({image,doc:editor.document,history:editor.history,commit:editor.commitDocument,onError:setError,onLock:setTextureLocked})
   const {reset}=editor
   const {reset:resetTexture}=texture
-  const locked=busy||textureLocked||exporting||!!editor.cropDraft
+  const locked=busy||textureLocked||exporting||!!editor.cropDraft||!!textDraft||preview
+  const selected=editor.document?.annotations.find(i=>i.id===selectedId)
+
+  useEffect(()=>{
+    const key=(event:KeyboardEvent)=>{
+      if(locked||panning||editor.tool!=='select'||!selected||!editor.document||event.defaultPrevented)return
+      if(event.target instanceof HTMLElement&&(event.target.closest('input,textarea,select,button')||event.target.isContentEditable))return
+      if(event.key==='Escape'){setSelectedId(null);event.preventDefault();return}
+      if(event.key==='Delete'||event.key==='Backspace'){editor.commitDocument(removeAnnotation(editor.document,selected.id));setSelectedId(null);event.preventDefault();return}
+      const moves:Record<string,Point>={ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1}}
+      const delta=moves[event.key]
+      if(delta){event.preventDefault();const n=event.shiftKey?10:1;editor.commitDocument(updateAnnotation(editor.document,transformAnnotation(selected,'move',{x:0,y:0},{x:delta.x*n,y:delta.y*n},editor.document.crop)))}
+    }
+    window.addEventListener('keydown',key);return ()=>window.removeEventListener('keydown',key)
+  },[locked,panning,selected,editor])
 
   useEffect(()=>{
     mounted.current=true
@@ -45,7 +68,7 @@ export default function App() {
   },[picking])
 
   const openFiles=useCallback(async(files:File[])=>{
-    if(loading.current||exportInFlight.current||files.length===0||textureLocked) return
+    if(loading.current||exportInFlight.current||files.length===0||textureLocked||textDraft||preview) return
     if(files.length!==1){setError('Выберите одно изображение');return}
     if(current.current&&!window.confirm('Открыть другое изображение? Текущие изменения будут потеряны')) return
     loading.current=true;setBusy(true);setError('')
@@ -55,11 +78,12 @@ export default function App() {
       const previous=current.current;current.current=next
       resetTexture();reset(next.width,next.height);setImage(next)
       setPanning(false);setZoom(null);setColor('#000000');setPicking(false)
+      setSelectedId(null)
       previous?.bitmap.close()
     } catch(cause) {
       if(mounted.current) setError(cause instanceof Error?cause.message:'Не удалось открыть изображение.')
     } finally {loading.current=false;if(mounted.current) setBusy(false)}
-  },[reset,resetTexture,textureLocked])
+  },[reset,resetTexture,textureLocked,textDraft,preview])
 
   async function savePng() {
     if(!image || !editor.document || loading.current || locked || exportInFlight.current) return
@@ -77,9 +101,21 @@ export default function App() {
 
   function changeZoom(value:number|null) {editor.cancelCrop();setPicking(false);setZoom(value)}
   function pick(value:string){setPanning(false);setColor(value);setPicking(false);editor.setTool('redact')}
+  function startText(at:Point) {
+    if(!editor.document)return
+    setTextDraft({id:crypto.randomUUID(),kind:'text',at,text:'',fontSize:24,color})
+  }
+  function applyText(item:TextAnnotation) {
+    if(!editor.document)return
+    editor.commitDocument(editor.document.annotations.some(i=>i.id===item.id)?updateAnnotation(editor.document,item):appendAnnotation(editor.document,item))
+    setTextDraft(null);setSelectedId(item.id);editor.setTool('select')
+  }
+  function objectColor(value:string) {
+    if(selected&&editor.document&&selected.kind!=='texture')editor.commitDocument(updateAnnotation(editor.document,{...selected,color:value} as Annotation))
+  }
 
   return <><AmbientBackdrop theme={theme}/><main>
-    <UploadZone busy={busy||textureLocked||exporting} hasImage={!!image} onFiles={openFiles}>
+    <UploadZone busy={busy||textureLocked||exporting||!!textDraft||preview} hasImage={!!image} onFiles={openFiles}>
       <header><span className="brand-mark" aria-hidden="true"><i/><i/><i/></span><div className="brand"><span className="brand-name">BeforeShare</span><h1>Перед отправкой</h1></div>{image&&<p className="stage">Редактирование изображения</p>}<button type="button" className="secondary theme-toggle" onClick={()=>setTheme(theme==='dark'?'light':'dark')}>{theme==='dark'?'Светлая тема':'Тёмная тема'}</button></header>
       {!image&&<section className="intro">
         <div className="hero-copy">
@@ -105,7 +141,19 @@ export default function App() {
           <button type="button" className="secondary" disabled={locked} onClick={()=>changeZoom(null)}>Вписать</button>
           <label className="color-control">Цвет заливки <input aria-label="Цвет заливки" type="color" value={color} disabled={locked} onChange={event=>setColor(event.target.value)}/></label>
           <button type="button" className="secondary" disabled={locked} aria-pressed={picking} onClick={()=>{setPanning(false);setPicking(!picking)}}>Пипетка</button>
+          {editor.tool==='pencil'&&<label>Толщина линии <input aria-label="Толщина линии" type="number" min={1} max={80} value={lineWidth} disabled={locked} onChange={e=>setLineWidth(Math.max(1,Math.min(80,Number(e.target.value)||1)))}/></label>}
         </div>
+        {editor.tool==='select'&&!panning&&<div className="view-controls" role="group" aria-label="Выбранный объект">
+          <label>Объект <select aria-label="Объект" value={selected?.id??''} disabled={locked} onChange={e=>setSelectedId(e.target.value||null)}>
+            <option value="">Нет выделения</option>
+            {editor.document?.annotations.map((item,i)=><option key={item.id} value={item.id}>{i+1}. {item.kind==='text'?item.text.slice(0,25):item.kind==='texture'?'Текстура':toolHelp[item.kind].split('.')[0]}</option>)}
+          </select></label>
+          <label>Цвет объекта <input type="color" aria-label="Цвет объекта" value={selected&&selected.kind!=='texture'?(selected.color??(selected.kind==='redact'?'#000000':'#f97316')):'#000000'} disabled={locked||!selected||selected.kind==='texture'} onChange={e=>objectColor(e.target.value)}/></label>
+          <button type="button" className="secondary" disabled={locked||selected?.kind!=='text'} onClick={()=>{if(selected?.kind==='text')setTextDraft(selected)}}>Редактировать текст</button>
+          <button type="button" className="secondary" disabled={locked||!selected} onClick={()=>{if(selected&&editor.document)editor.commitDocument(removeAnnotation(editor.document,selected.id));setSelectedId(null)}}>Удалить объект</button>
+          <button type="button" className="secondary" disabled={locked||!selected} onClick={()=>setSelectedId(null)}>Снять выделение</button>
+          <small>После изменения заливки проверьте, не открылись ли личные данные.</small>
+        </div>}
       </>}
       {image&&editor.cropDraft&&<div className="crop-actions" role="group" aria-label="Подтверждение обрезки">
         <button type="button" disabled={busy} onClick={editor.applyCrop}>Применить</button>
@@ -120,15 +168,18 @@ export default function App() {
       <p className="status" role="status">{exporting?'Создаём PNG…':busy?'Открываем изображение…':texture.computing?'Подбираем соседнюю текстуру…':texture.preview?'Предпросмотр текстуры: примените или отмените.':picking?'Нажмите на изображение, чтобы выбрать цвет. Escape — отмена.':''}</p>
       {image&&editor.document&&<>
         <section className="workspace" aria-label="Предпросмотр изображения" aria-busy={busy||texture.computing||exporting}>
-          <EditorCanvas panning={panning} cropDraft={editor.cropDraft} onCropDraft={editor.setCropDraft} onCancelCrop={editor.cancelCrop}
+          <EditorCanvas selectedId={selectedId} onSelect={setSelectedId} onText={startText} lineWidth={lineWidth} panning={panning} cropDraft={editor.cropDraft} onCropDraft={editor.setCropDraft} onCancelCrop={editor.cancelCrop}
             tool={editor.tool} disabled={locked} onCommit={editor.commitDocument} image={image} doc={editor.document}
             onScaleChange={setScale} onError={setError} zoom={zoom} color={color} picking={picking} onPick={pick}
             assets={texture.assets} textureDraft={texture.preview} onTexture={texture.request}/>
         </section>
         <button type="button" className="export-button" disabled={locked} onClick={savePng}>Скачать PNG</button>
+        <button type="button" className="secondary" disabled={locked} onClick={()=>{setPicking(false);setPreview(true)}}>Предпросмотр PNG</button>
         <p className="dimensions">{editor.document.crop.width} × {editor.document.crop.height} px <span>Масштаб {scale}%</span></p>
       </>}
     </UploadZone>
+    {textDraft&&<TextDialog key={textDraft.id} item={textDraft} onApply={applyText} onCancel={()=>setTextDraft(null)}/>}
+    {preview&&image&&editor.document&&<PngPreview image={image} doc={editor.document} assets={texture.assets} onClose={()=>setPreview(false)}/>}
     <p className="privacy">Изображение обрабатывается в вашем браузере и не отправляется на сервер</p>
     {image&&<>
       <p className="note" id="editor-help">{panning?'Перемещение: двигайте картинку пальцем или перетаскивайте мышью. Для выделения выберите «Скрыть» или другой инструмент.':toolHelp[editor.tool]}</p>
